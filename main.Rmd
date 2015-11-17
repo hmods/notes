@@ -6,6 +6,7 @@ output:
   html_document:
     fig_caption: yes
     toc: yes
+    keep_md: yes
   pdf_document:
     fig_caption: yes
     highlight: tango
