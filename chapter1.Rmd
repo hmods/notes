@@ -152,6 +152,69 @@ The estimate for $\beta$ is called "x", because it is a coefficient associated w
 This parameter is often referred to as the "slope", because it represents the increase in the expected value of $y$ for a one unit increase in $x$ (the rise in y over run in x).
 Point estimates for the standard deviation and variance of $\epsilon$ can be extracted as before (`summary(m)$sigma` and `summary(m)$sigma^2`).
 
+### Centering and scaling covariates
+
+Often, it's a good idea to "center" covariates so that they have a mean of zero ($\bar{x} = 0$). 
+This is achieved by subtracting the sample mean of a covariate from the vector of covariate values ($x - \bar{x}$).
+It's also useful to additionally scale covariates so that they are all on a common and unitless scale. 
+While many will divide each covariate by its standard deviation, Gelman and Hill (pg. 57) recommend dividing by twice the standard deviation ($s_x$) so that binary covariates are transformed from $x \in \{0, 1\}$ to $x_t \in \{-0.5, 0.5\}$, where $x_t$ is the transformed covariate: $x_t = \frac{x - \bar{x}}{2 s_x}$. 
+If covariates are not centered and scaled, then it is common to observe correlations between estimated slopes and intercepts. 
+
+```{r, echo=FALSE, fig.width=6, fig.height=4, fig.cap="Linear regression line of best fit with 95% confidence intervals for the line. Notice that if the slope is lower (the upper dashed line) then the intercept necessarily goes up, and if the slope is higher (the lower dashed line), the intercept must decrease."}
+
+x <- runif(n)
+alpha <- 0
+beta <- 1
+sigma <- .2
+y <- rnorm(n, mean = alpha + beta * x, sd = sigma)
+x <- x + 3
+plot(x, y, xlim=c(0, max(x)), ylim=c(-4, max(y)))
+m <- lm(y ~ x)
+abline(m, col='blue')
+px <- seq(-1, max(x) + 1, length.out=100)
+py <- predict(m, list(x=px), se.fit=TRUE, interval='confidence')
+lines(px, py$fit[, 'lwr'], lty=2, col='blue')
+lines(px, py$fit[, 'upr'], lty=2, col='blue')
+```
+
+So, we expect that in this case, the estimates for the intercept and slope must be negatively correlated.
+This is bourne out in the confidence region for our estimates of $\alpha$ and $\beta$. 
+Usually, people inspect univariate confidence intervals for parameters, e.g.,
+
+```{r}
+confint(m)
+```
+
+This is misleading because our estimates for these parameters are correlated. 
+For any given value of the intercept, there are only certain values of the slope that are supported.
+To assess this possibility, we might also be interested in the bivariate confidence ellipse for these two parameters. 
+We can evaluate this quantity graphically as follows with some help from the `car` package:
+
+```{r, fig.caption="The bivariate confidence region for the slope and intercept. Correlation implies that for any particular value of alpha or beta, only a small subset of the values of the other parameter are supported. This information is not available by considering the univariate confidence intervals alone."}
+library(car)
+confidenceEllipse(m)
+```
+
+This is not great. 
+We want to be able to directly use the univariate confidence intervals. 
+Our problem can be solved by centering $x$:
+
+```{r, echo=FALSE, fig.height=5, fig.width=9}
+par(mfrow=c(1, 2))
+x <- x - mean(x)
+m <- lm(y ~ x)
+plot(x, y)
+abline(m, col='blue')
+px <- seq(min(x) - 1, max(x) + 1, length.out=100)
+py <- predict(m, list(x=px), se.fit=TRUE, interval='confidence')
+lines(px, py$fit[, 'lwr'], lty=2, col='blue')
+lines(px, py$fit[, 'upr'], lty=2, col='blue')
+confidenceEllipse(m)
+```
+
+Now there is no serious correlation in the estimates and we are free to use the univariate confidence intervals without needing to consider the joint distribution of the slope and intercept. 
+This trick helps with interpretation, but it will also prove useful later in the course in the context of Markov chain Monte Carlo (MCMC) sampling. 
+
 ### Checking assumptions
 
 We have assumed that the distribution of error terms is normally distributed, and this assumption is worth checking. 
@@ -236,6 +299,19 @@ summary(m)
 Because chocolate comes first alphabetically, it is the reference group and the "(Intercept)" estimate corresponds to the estimate of the group-level mean for chocolate. 
 The other two estimates are contrasts between the other groups and this reference group, i.e.  "xstrawberry" is the estimated difference between the group mean for strawberry and the reference group. 
 
+If we wish instead to use a means paramaterization, we need to supress the intercept term in our model as follows:
+
+```{r}
+m <- lm(y ~ 0 + x)
+summary(m)
+```
+
+Arguably, this approach is more useful because it simplifies the construction of confidence intervals for the group means:
+
+```{r}
+confint(m)
+```
+
 ### Checking assumptions
 
 Our assumptions in this simple one way ANOVA context are identical to our assumptions with linear regression. 
@@ -258,14 +334,171 @@ There are multivariate general linear models (e.g., MANOVA) where the response v
 The key point here is that the producct of $X$ and $\beta$ provides the mean of the normal distribution from which $y$ is drawn. 
 From this perspective, the difference between the model of the mean, linear regression, ANOVA, etc., lies in the structure of $X$ and subsequent interpretation of the parameters $\beta$. 
 This is a very powerful idea that unites many superficially disparate approaches. 
+It also is the reason that these models are considered "linear", even though a regression line might by quite non-linear (e.g., polynomial regression). 
+These models are linear in their parameters, meaning that our expected value for the response $y$ is a **linear combination** (formal notion) of the parameters. 
+If a vector of expected values for $y$ in some model cannot be represented as $X \beta$, then it is not a linear model. 
 
-For instance, in the model of the mean, $X$ is an $n$ by $1$ matrix, with each element equal to $1$ (i.e. a vector of ones). 
+In the model of the mean, $X$ is an $n$ by $1$ matrix, with each element equal to $1$ (i.e. a vector of ones). 
 With linear regression, $X$'s first column is all ones (corresponding to the intercept parameter), and the second column contains the values of the covariate $x$. 
 In ANOVA, the design matrix $X$ will differ between the means and effects parameterizations. 
 With a means parameterization, the entries in column $j$ will equal one if observation (row) $i$ is in group $j$, and entries are zero otherwise. 
-Can you figure out the structure of $X$ with R's default effects parameterization?
-You can check your work with `model.matrix(m)`, where `m` is a model that you've fitted with `lm`.
 If you are not comfortable with matrix multiplication, it's worth investing some effort so that you can understand why $X\beta$ is such a powerful construct. 
+
+>Can you figure out the structure of $X$ with R's default effects parameterization?
+>You can check your work with `model.matrix(m)`, where `m` is a model that you've fitted with `lm`.
+
+## Interactions between covariates
+
+Often, the effect of one covariate depends on the value of another covariate. 
+This is referred to as "interaction" between the covariates. 
+Interactions can exist between two or more continuous and/or nominal covariates. 
+These situations have special names in the classical statistics literature. 
+For example, models with interactions between nominal covariates fall under "factorial ANOVA", those with interactions between a continuous and a nominal covariate are referred to as "analysis of covariance (ANCOVA)". 
+Here we prefer to consider these all as special cases of general linear models. 
+
+### Interactions between two continuous covariates
+
+Here we demonstrate simulation and estimation for a model with an interaction between two continuous covariates. 
+Notice that in the simulation, we have exploited the $X \beta$ construct to generate a vector of expected values for $y$. 
+
+```{r}
+n <- 100
+x1 <- rnorm(n)
+x2 <- rnorm(n)
+beta <- rnorm(4)
+sigma <- 1
+X <- matrix(c(rep(1, n), x1, x2, x1 * x2), nrow=n)
+mu_y <- X %*% beta
+y <- rnorm(n, mu_y, sigma)
+m <- lm(y ~ x1 * x2)
+summary(m)
+```
+
+Visualizing these models is tricky, because we are in 3d space (with dimensions $x_1$, $x_2$, and $y$), but contour plots can be effective and leverage peoples' understanding of topographic maps. 
+
+```{r, warning=FALSE}
+# visualizing the results in terms of the linear predictor
+lo <- 40
+x1seq <- seq(min(x1), max(x1), length.out = lo)
+x2seq <- seq(min(x2), max(x2), length.out = lo)
+g <- expand.grid(x1=x1seq, x2=x2seq)
+g$e_y <- beta[1] + beta[2] * g$x1 + beta[3] * g$x2 + beta[4] * g$x1 * g$x2
+ggplot(g, aes(x=x1, y=x2)) + 
+  geom_tile(aes(fill=e_y)) + 
+  stat_contour(aes(z=e_y), col='grey') + 
+  scale_fill_gradient2() + 
+  geom_point(data=data.frame(x1, x2))
+```
+
+Alternatively, you might check out the `effects` package:
+
+```{r, message=FALSE}
+library(effects)
+plot(allEffects(m))
+```
+
+### Interactions between two categorical covariates
+
+Here we demonstrate interaction between two categorical covariates, using the `diamonds` dataset which is in the `ggplot2` package.t
+We are interested in the relationship between diamond price, cut quality, and color.
+
+```{r}
+str(ToothGrowth)
+ToothGrowth$dose <- factor(ToothGrowth$dose)
+ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) + 
+  geom_point()
+```
+
+In general, visualizing the raw data is a good idea. 
+However, we might also be interested in a table with group-wise summaries, such as the sample means, standard deviations, and sample sizes. 
+
+```{r, message=FALSE}
+library(dplyr)
+ToothGrowth %>%
+  group_by(dose, supp) %>%
+  summarize(mean = mean(len), 
+            sd = sd(len), 
+            n = n())
+```
+
+We can construct a model to estimate the effect of dose, supplement, and their interaction. 
+
+```{r}
+m <- lm(len ~ dose * supp, data = ToothGrowth)
+summary(m)
+```
+
+This summary gives the effects-parameterization version of the summary. 
+The "(Intercept)" refers to the combination of factor levels that occur first alphabetically: in this case, a dose of 0.5 with the "OJ" supplement. 
+The coefficients for `dose1` and `dose2` represent estimated contrasts for these two groups relative to the intercept. 
+The coefficient for `suppVC` represents the contrast between the "VC" and "OJ" levels of supplement when the dose is 0.5.
+The interaction terms represent the difference in the effect of VC for `dose1` and `dose2` relative to a dose of 0.5. 
+None of this is particularly intuitive, but this information can be gleaned by inspecting the design matrix $X$ produced by `lm` in the process of fitting the model. 
+
+```{r}
+model.matrix(m)
+```
+
+Or, if you like, inspecting the design matrix along with the dataset to get a better sense for how it relates to the factor levels:
+
+```{r}
+cbind(model.matrix(m), ToothGrowth)
+```
+
+Often, researchers want to know if interactions need to be included in the model. 
+From a null hypothesis significance testing perspective, we can evaluate the 'significance' of the interaction term as follows: 
+
+```{r}
+anova(m)
+```
+
+We find that the interaction between dose and supplement is statistically significant, meaning that if we assume that there is no interaction, it is unlikely to observe data that are as or more extreme as what we have observed over the course of infinitely many replicated experiments that will probably never occur.
+Although this is far from intuitive, this approach has been widely used.
+We will introduce a more streamlined procedure in chapter 3 that 1) does not assume that the effect is zero to begin with, and 2) does not necessarily invoke a hypothetical infinite number of replicated realizations of the data, conditional on one particular set of parameters. 
+An alternative approach would be to use information theoretics to decide whether the interaction is warranted:
+
+```{r}
+m2 <- lm(len ~ dose + supp, data = ToothGrowth)
+AIC(m, m2)
+```
+
+In the past decade following Burnham and Anderson's book on the topic, ecologists have leaned heavily on Akaike's information criterion (AIC), which is a relative measure of model quality (balancing goodness of fit with model complexity). 
+Here we see that the original model `m` with interaction has a lower AIC value, and is therefore better supported. 
+AIC can be considered to be similar to cross validation, approximating the ability of a model to predict future data.
+
+Being somewhat lazy, we might again choose to plot the results of this model using the `effects` package. 
+
+```{r}
+plot(allEffects(m))
+```
+
+This is less than satisfying, as it does not show any data. 
+All we see is model output. 
+If the model is a crap model, then the output is also crap. 
+But, evaluating the crappiness of the model is difficult when there are no data shown.
+Ideally, the data can be shown along with the estimated group means and some indication of uncertainty. 
+If we weren't quite so lazy, we could use the `predict` function to obtain confidence intervals for the means of each group. 
+
+```{r}
+# construct a new data frame for predictions
+g <- expand.grid(supp = levels(ToothGrowth$supp), 
+                 dose = levels(ToothGrowth$dose))
+p <- predict(m, g, interval = 'confidence', type='response')
+predictions <- cbind(g, data.frame(p))
+
+ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) + 
+  geom_segment(data=predictions, 
+               aes(y=lwr, yend=upr, 
+                   xend=interaction(dose, supp)), col='red') + 
+  geom_point(data=predictions, aes(y=fit), color='red', size=2, shape=2) + 
+  geom_jitter(position = position_jitter(width=.1), shape=1) + 
+  ylab("Length")
+```
+
+This plot is nice because we can observe the data along with the model output. 
+This makes it easier for readers to understand how the model relates to, fits, and does not fit the data.
+If you wish to obscure the data, you could make a bar plot with error pars to represent the standard errors. 
+Although "dynamite" plots are horrifically common, we shall not include one here and we strongly recommend that you never produce such a plot ([more here](http://biostat.mc.vanderbilt.edu/wiki/pub/Main/TatsukiRcode/Poster3.pdf)). 
 
 ## Further reading
 
