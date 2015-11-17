@@ -1,0 +1,17 @@
+Chapter 3: Fitting Bayesian linear models
+==============================
+
+#### Priorities
+
+- Bayes' theorem and Bayesian probability
+- relationsihp between likelihood and Bayesian inference
+- priors (generally, informative vs. non-informative)
+- interpreting posterior disributions (mean, mode, intervals)
+- intro to Bayesian computation and MCMC
+- single parameter models: MLE vs. Bayesian treatments
+- Bayesian linear regression: intro to Stan & JAGS
+
+#### Optional
+
+- comparing posterior distributions for different parameter estimates (i.e. are they "significantly" different)
+- proper vs. improper priors 

@@ -1,0 +1,28 @@
+Chapter 7: Bayesian hierarchical models
+============================
+
+#### Priorities
+
+- varying intercepts (NBA freethrow example) with `Stan`
+- hierarchical models in Stan
+- highlight Bayesian connection to priors
+- classic examples: 
+    - hierarchical model number 1: occupancy model (a classic)
+    - hierarchical model: binomial-Poisson hierarchy (e.g. # eggs laid & survival)
+- introduction to the multivariate normal distribution
+- parameters for hierarchical variance parameters
+- prediction (new vs. observed groups)
+- priors 
+- note crossing of the 'ease' threshold (?)
+
+
+#### Optional
+
+- posterior prediction
+- basic Bayesian models in MCMCglmm
+- random effects, fixed effects, mixed effects models as special instances of hierarchical linear models
+
+#### Reading
+
+Gelman, A., J. Hill, and M. Yajima. 2012. Why We (Usually) Don’t Have to Worry About Multiple Comparisons. Journal of Research on Educational Effectiveness 5:189–211.  
+Gelman and Hill discussion of random effects terminology (very good)

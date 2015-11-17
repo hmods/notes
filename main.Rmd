@@ -1,0 +1,40 @@
+---
+title: "Hierarchical modeling course notes"
+author: "Max Joseph"
+date: "November 16, 2015"
+output:
+  html_document:
+    fig_caption: yes
+    toc: yes
+  pdf_document:
+    fig_caption: yes
+    highlight: tango
+    toc: yes
+---
+
+```{r child = 'chapter1.Rmd'}
+```
+
+```{r child = 'chapter2.Rmd'}
+```
+
+```{r child = 'chapter3.Rmd'}
+```
+
+```{r child = 'chapter4.Rmd'}
+```
+
+```{r child = 'chapter5.Rmd'}
+```
+
+```{r child = 'chapter6.Rmd'}
+```
+
+```{r child = 'chapter7.Rmd'}
+```
+
+```{r child = 'chapter8.Rmd'}
+```
+
+```{r child = 'chapter9.Rmd'}
+```

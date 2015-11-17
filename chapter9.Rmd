@@ -1,0 +1,14 @@
+Chapter 9: Model comparison
+================
+
+I envisions this as occuring a bit more ad hoc during the second half as students start to build their own models
+
+- start with simpler models and build (may be counterintuitive for those used to step-down procedures)
+- posterior prediction
+- DIC, wAIC
+- cross-checking
+- simulated data
+
+#### Reading
+
+Hooten, M. B., and N. T. Hobbs. 2015. A guide to Bayesian model selection for ecologists. Ecological Monographs 85:3–28.  

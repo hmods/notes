@@ -1,0 +1,19 @@
+Chapter 2: Maximum likelihood estimation
+=============================
+
+My thought here is to combine the probability and likelihood functions directly with simple model fitting. May or may not be too much for one class, but I worry that a classes just on probability distributions and likilhood wouldn't be practical enough for a short course. 
+
+Hopefully students have used `lm` before, and we can get more into depth by approaching this problem from two new angles: optimization of the likelihood function and Bayesian approaches. I suspect this will be a good place to introduce Bayesian inference because the problem of regression should be familiar to most students.
+
+#### Priorities
+
+- definition of likelihood
+- single parameter models: MLE and optim
+- model of the mean with unknown variance 
+- fitting simple linear models with liklihood (glm with gaussian link?)
+- assumptions and inference
+- separation (as a preview of why priors are nice...)
+
+#### Optional
+
+- restricted maximum likelihood vs. maximum likelihood

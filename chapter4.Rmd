@@ -1,0 +1,23 @@
+Chapter 4: Poisson models
+==============
+
+Here is my preference for teaching Poisson models first. I (personally) prefer to start with poisson because (1) IMO log links are more intuitive than logit (probit etc) links (2) latent variables remain between zero and infinity (3) IMO overdispersion is easier to understand than in binomial models
+
+#### Priorties
+
+- non-gaussian data (counts, proportions, binary, exponential)
+- link functions and latent variables
+- Poisson distribution
+- log link as a map (what are we actually estimating -- mean or rate)
+- understanding effects sizes in Poisson models
+- dependence of mean and variance in non-Gaussian models 
+- overdispersion : quasi-Poisson and negative-binomial
+- overdispersion as unaccounted for variation (maybe a simple example -- sex effects)
+- implementation with `glm`, Stan, JAGS
+- graphical displays 
+- model checking
+
+
+#### Optional
+- simulation of data & parameter recovery
+
