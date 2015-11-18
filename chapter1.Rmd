@@ -474,7 +474,7 @@ plot(allEffects(m))
 
 This is less than satisfying, as it does not show any data. 
 All we see is model output. 
-If the model is a crap model, then the output is also crap. 
+If the model is crap, then the output and these plots are also crap. 
 But, evaluating the crappiness of the model is difficult when there are no data shown.
 Ideally, the data can be shown along with the estimated group means and some indication of uncertainty. 
 If we weren't quite so lazy, we could use the `predict` function to obtain confidence intervals for the means of each group. 
@@ -499,6 +499,53 @@ This plot is nice because we can observe the data along with the model output.
 This makes it easier for readers to understand how the model relates to, fits, and does not fit the data.
 If you wish to obscure the data, you could make a bar plot with error pars to represent the standard errors. 
 Although "dynamite" plots are horrifically common, we shall not include one here and we strongly recommend that you never produce such a plot ([more here](http://biostat.mc.vanderbilt.edu/wiki/pub/Main/TatsukiRcode/Poster3.pdf)). 
+
+### Interactions between continuous and categorical covariates
+
+Sometimes, we're interested in interactions between continuous or numeric covariates and another covariates with discrete categorical levels. 
+Again, this falls under the broad class of models used in analysis of covariance (ANCOVA). 
+
+```{r}
+x1 <- rnorm(n)
+x2 <- factor(sample(c('A', 'B'), n, replace=TRUE))
+
+# generate slopes and intercepts for the first and second groups
+a <- rnorm(2)
+b <- rnorm(2)
+sigma <- .4
+
+X <- matrix(c(ifelse(x2 == 'A', 1, 0), 
+              ifelse(x2 == 'B', 1, 0), 
+              ifelse(x2 == 'A', x1, 0), 
+              ifelse(x2 == 'B', x1, 0)
+            ), nrow=n)
+
+mu_y <- X %*% c(a, b)
+y <- rnorm(n, mu_y, sigma)
+plot(x1, y, col=x2, pch=19)
+legend('topright', col=1:2, legend=c('Group A', 'Group B'), pch=19)
+```
+
+Here the intercepts and slopes are allowed to vary for two groups. 
+We can fit a model with an interaction between these covariates. 
+The intercepts and slopes are estimated separately for the two groups. 
+
+```{r}
+m <- lm(y ~ x1 * x2)
+summary(m)
+```
+
+Let's plot the lines of best fit along with the data. 
+
+```{r}
+plot(x1, y, col=x2, pch=19)
+legend('topright', col=1:2, legend=c('Group A', 'Group B'), pch=19)
+abline(coef(m)[1], coef(m)[2])
+abline(coef(m)[1] + coef(m)[3], coef(m)[2] + coef(m)[4], col='red')
+```
+
+The `abline` function, used above, adds lines to plots based on a y-intercept (first argument) and a slope (second argument). 
+Do you understand why the particular coefficients that we used as inputs provide the desired intercepts and slopes for each group? 
 
 ## Further reading
 
