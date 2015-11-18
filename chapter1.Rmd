@@ -365,7 +365,7 @@ Notice that in the simulation, we have exploited the $X \beta$ construct to gene
 n <- 50
 x1 <- rnorm(n)
 x2 <- rnorm(n)
-beta <- rnorm(4)
+beta <- c(.5, 1, -1, 2)
 sigma <- 1
 X <- matrix(c(rep(1, n), x1, x2, x1 * x2), nrow=n)
 mu_y <- X %*% beta
