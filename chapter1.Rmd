@@ -1,7 +1,7 @@
 Chapter 1: Linear models
 ========================
 
-## Big picture & learning goals
+## Big picture
 
 This course builds on an understanding of the mechanics of linear models. 
 Here we introduce some key topics that will facilitate future understanding hierarchical models.
@@ -96,7 +96,7 @@ If the variance is changing across values of $x$, then the assumption of homoske
 
 ```{r, fig.width=6, fig.height=4, fig.cap="Simulated data from a linear regression model. The true expected value of y given x, E(y | x), is shown as a line."}
 # simulate and plot x and y values
-n <- 100
+n <- 50
 x <- runif(n)
 alpha <- -2
 beta <- 3
@@ -362,7 +362,7 @@ Here we demonstrate simulation and estimation for a model with an interaction be
 Notice that in the simulation, we have exploited the $X \beta$ construct to generate a vector of expected values for $y$. 
 
 ```{r}
-n <- 100
+n <- 50
 x1 <- rnorm(n)
 x2 <- rnorm(n)
 beta <- rnorm(4)
@@ -454,7 +454,7 @@ anova(m)
 
 We find that the interaction between dose and supplement is statistically significant, meaning that if we assume that there is no interaction, it is unlikely to observe data that are as or more extreme as what we have observed over the course of infinitely many replicated experiments that will probably never occur.
 Although this is far from intuitive, this approach has been widely used.
-We will introduce a more streamlined procedure in chapter 3 that 1) does not assume that the effect is zero to begin with, and 2) does not necessarily invoke a hypothetical infinite number of replicated realizations of the data, conditional on one particular set of parameters. 
+We will introduce a more streamlined procedure in chapter 3 that 1) does not assume that the effect is zero to begin with, and 2) does not necessarily invoke a hypothetical infinite number of replicated realizations of the data, conditional on one particular parameter value. 
 An alternative approach would be to use information theoretics to decide whether the interaction is warranted:
 
 ```{r}
@@ -498,7 +498,7 @@ ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) +
 This plot is nice because we can observe the data along with the model output. 
 This makes it easier for readers to understand how the model relates to, fits, and does not fit the data.
 If you wish to obscure the data, you could make a bar plot with error pars to represent the standard errors. 
-Although "dynamite" plots are horrifically common, we shall not include one here and we strongly recommend that you never produce such a plot ([more here](http://biostat.mc.vanderbilt.edu/wiki/pub/Main/TatsukiRcode/Poster3.pdf)). 
+Although "dynamite" plots are common, we shall not include one here and we strongly recommend that you never produce such a plot ([more here](http://biostat.mc.vanderbilt.edu/wiki/pub/Main/TatsukiRcode/Poster3.pdf)). 
 
 ### Interactions between continuous and categorical covariates
 
@@ -553,4 +553,4 @@ Schielzeth, H. 2010. Simple means to improve the interpretability of regression 
 
 Enqvist, L. 2005. The mistreatment of covariate interaction terms in linear model analyses of behavioural and evolutionary ecology studies. Animal Behaviour 70:967–971.  
 
-Gelman and Hill, Ch. 3 & 4.
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 3-4.

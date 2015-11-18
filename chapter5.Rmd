@@ -11,6 +11,7 @@ Here, the students will continue to use a combination of methods for implementat
 - implementation with `glm`
 - overdispersion in proportion models and understanding the difference between individual and group level probabilities
 - implementation with  Stan, JAGS
+- separation
 - hierarchical model number 1: occupancy model (a classic) (maybe, or we could do it later)
   - review marginalization 
 - graphical displays
