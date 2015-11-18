@@ -80,18 +80,18 @@ summary(m)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.84320 -0.52613  0.04519  0.66155  1.83992 
+## -1.49822 -0.72249 -0.02543  0.67548  2.03658 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)
-## (Intercept)  -0.1676     0.2565  -0.653    0.521
+## (Intercept) -0.03521    0.20729   -0.17    0.867
 ## 
-## Residual standard error: 1.147 on 19 degrees of freedom
+## Residual standard error: 0.927 on 19 degrees of freedom
 ```
 
 The summary of our model object `m` provides a lot of information. 
 For reasons that will become clear shortly, the estimated population mean is referred to as the "Intercept". 
-Here, we get a point estimate for the population mean $\mu$: -0.168 and an estimate of the residual standard deviation $\sigma$: 1.147, which we can square to get an estimate of the residual variance $\sigma^2$: 1.316.
+Here, we get a point estimate for the population mean $\mu$: -0.035 and an estimate of the residual standard deviation $\sigma$: 0.927, which we can square to get an estimate of the residual variance $\sigma^2$: 0.859.
 
 ## Linear regression
 
@@ -164,18 +164,18 @@ summary(m)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.93645 -0.25374 -0.02761  0.26883  0.95335 
+## -0.95413 -0.27784 -0.03012  0.36929  1.33034 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) -1.99918    0.07833  -25.52   <2e-16 ***
-## x            2.91961    0.12600   23.17   <2e-16 ***
+## (Intercept) -1.92327    0.07677  -25.05   <2e-16 ***
+## x            2.79860    0.13654   20.50   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.372 on 98 degrees of freedom
-## Multiple R-squared:  0.8456,	Adjusted R-squared:  0.8441 
-## F-statistic: 536.9 on 1 and 98 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.4294 on 98 degrees of freedom
+## Multiple R-squared:  0.8108,	Adjusted R-squared:  0.8089 
+## F-statistic: 420.1 on 1 and 98 DF,  p-value: < 2.2e-16
 ```
 
 The point estimate for the parameter $\alpha$ is called "(Intercept)". 
@@ -183,6 +183,53 @@ This is because our estimate for $\alpha$ is the y-intercept of the estimated re
 The estimate for $\beta$ is called "x", because it is a coefficient associated with the variable "x" in this model. 
 This parameter is often referred to as the "slope", because it represents the increase in the expected value of $y$ for a one unit increase in $x$ (the rise in y over run in x).
 Point estimates for the standard deviation and variance of $\epsilon$ can be extracted as before (`summary(m)$sigma` and `summary(m)$sigma^2`).
+
+### Centering and scaling covariates
+
+Often, it's a good idea to "center" covariates so that they have a mean of zero ($\bar{x} = 0$). 
+This is achieved by subtracting the sample mean of a covariate from the vector of covariate values ($x - \bar{x}$).
+It's also useful to additionally scale covariates so that they are all on a common and unitless scale. 
+While many will divide each covariate by its standard deviation, Gelman and Hill (pg. 57) recommend dividing by twice the standard deviation ($s_x$) so that binary covariates are transformed from $x \in \{0, 1\}$ to $x_t \in \{-0.5, 0.5\}$, where $x_t$ is the transformed covariate: $x_t = \frac{x - \bar{x}}{2 s_x}$. 
+If covariates are not centered and scaled, then it is common to observe correlations between estimated slopes and intercepts. 
+
+![Linear regression line of best fit with 95% confidence intervals for the line. Notice that if the slope is lower (the upper dashed line) then the intercept necessarily goes up, and if the slope is higher (the lower dashed line), the intercept must decrease.](main_files/figure-html/unnamed-chunk-14-1.png) 
+
+So, we expect that in this case, the estimates for the intercept and slope must be negatively correlated.
+This is bourne out in the confidence region for our estimates of $\alpha$ and $\beta$. 
+Usually, people inspect univariate confidence intervals for parameters, e.g.,
+
+
+```r
+confint(m)
+```
+
+```
+##                  2.5 %    97.5 %
+## (Intercept) -3.3919881 -2.423897
+## x            0.8324903  1.107004
+```
+
+This is misleading because our estimates for these parameters are correlated. 
+For any given value of the intercept, there are only certain values of the slope that are supported.
+To assess this possibility, we might also be interested in the bivariate confidence ellipse for these two parameters. 
+We can evaluate this quantity graphically as follows with some help from the `car` package:
+
+
+```r
+library(car)
+confidenceEllipse(m)
+```
+
+![](main_files/figure-html/unnamed-chunk-16-1.png) 
+
+This is not great. 
+We want to be able to directly use the univariate confidence intervals. 
+Our problem can be solved by centering $x$:
+
+![](main_files/figure-html/unnamed-chunk-17-1.png) 
+
+Now there is no serious correlation in the estimates and we are free to use the univariate confidence intervals without needing to consider the joint distribution of the slope and intercept. 
+This trick helps with interpretation, but it will also prove useful later in the course in the context of Markov chain Monte Carlo (MCMC) sampling. 
 
 ### Checking assumptions
 
@@ -197,7 +244,7 @@ curve_x <- seq(min(resid(m)), max(resid(m)), .01)
 lines(curve_x, dnorm(curve_x, 0, summary(m)$sigma))
 ```
 
-![Simulated data from a linear regression model.](main_files/figure-html/unnamed-chunk-14-1.png) 
+![Simulated data from a linear regression model.](main_files/figure-html/unnamed-chunk-18-1.png) 
 
 Even when the assumption of normality is correct, it is not always obvious that the residuals are normally distributed. 
 Another useful plot for assessing normality of errors is a quantile-quantile or Q-Q plot. 
@@ -209,7 +256,7 @@ If points lie above or below the line, then the residual is larger or smaller, r
 plot(m, 2)
 ```
 
-![A quantile-quantile plot to assess normality of residuals.](main_files/figure-html/unnamed-chunk-15-1.png) 
+![A quantile-quantile plot to assess normality of residuals.](main_files/figure-html/unnamed-chunk-19-1.png) 
 
 To assess heteroskedasticity, it is useful to inspect a plot of the residuals vs. fitted values, e.g. `plot(m, 1)`. 
 If it seems as though the spread or variance of residuals varies across the range of fitted values, then it may be worth worrying about homoskedasticity and trying some transformations to fix the problem. 
@@ -261,7 +308,7 @@ ggplot(data.frame(x, y), aes(x, y)) +
   ylab('Tastiness')
 ```
 
-![](main_files/figure-html/unnamed-chunk-16-1.png) 
+![](main_files/figure-html/unnamed-chunk-20-1.png) 
 
 ### Model fitting
 
@@ -282,23 +329,67 @@ summary(m)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.18371 -0.58098  0.00273  0.39306  2.11466 
+## -2.48337 -0.95182 -0.04641  0.77085  3.15924 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)   3.0613     0.2036  15.037  < 2e-16 ***
-## xstrawberry  -2.1978     0.2879  -7.634 2.80e-10 ***
-## xvanilla     -1.7080     0.2879  -5.932 1.86e-07 ***
+## (Intercept)   3.4034     0.2565  13.269  < 2e-16 ***
+## xstrawberry  -2.6894     0.3627  -7.414 6.49e-10 ***
+## xvanilla     -2.3406     0.3627  -6.453 2.58e-08 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.9105 on 57 degrees of freedom
-## Multiple R-squared:  0.5299,	Adjusted R-squared:  0.5134 
-## F-statistic: 32.12 on 2 and 57 DF,  p-value: 4.555e-10
+## Residual standard error: 1.147 on 57 degrees of freedom
+## Multiple R-squared:  0.5329,	Adjusted R-squared:  0.5165 
+## F-statistic: 32.51 on 2 and 57 DF,  p-value: 3.793e-10
 ```
 
 Because chocolate comes first alphabetically, it is the reference group and the "(Intercept)" estimate corresponds to the estimate of the group-level mean for chocolate. 
 The other two estimates are contrasts between the other groups and this reference group, i.e.  "xstrawberry" is the estimated difference between the group mean for strawberry and the reference group. 
+
+If we wish instead to use a means paramaterization, we need to supress the intercept term in our model as follows:
+
+
+```r
+m <- lm(y ~ 0 + x)
+summary(m)
+```
+
+```
+## 
+## Call:
+## lm(formula = y ~ 0 + x)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -2.48337 -0.95182 -0.04641  0.77085  3.15924 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## xchocolate    3.4034     0.2565  13.269  < 2e-16 ***
+## xstrawberry   0.7139     0.2565   2.783 0.007283 ** 
+## xvanilla      1.0628     0.2565   4.144 0.000115 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.147 on 57 degrees of freedom
+## Multiple R-squared:  0.7791,	Adjusted R-squared:  0.7674 
+## F-statistic: 66.99 on 3 and 57 DF,  p-value: < 2.2e-16
+```
+
+Arguably, this approach is more useful because it simplifies the construction of confidence intervals for the group means:
+
+
+```r
+confint(m)
+```
+
+```
+##                 2.5 %   97.5 %
+## xchocolate  2.8897413 3.916970
+## xstrawberry 0.2003202 1.227549
+## xvanilla    0.5491775 1.576407
+```
 
 ### Checking assumptions
 
@@ -312,7 +403,7 @@ par(mfrow=c(2, 2))
 plot(m)
 ```
 
-![](main_files/figure-html/unnamed-chunk-18-1.png) 
+![](main_files/figure-html/unnamed-chunk-24-1.png) 
 
 ## General linear models
 
@@ -325,14 +416,497 @@ There are multivariate general linear models (e.g., MANOVA) where the response v
 The key point here is that the producct of $X$ and $\beta$ provides the mean of the normal distribution from which $y$ is drawn. 
 From this perspective, the difference between the model of the mean, linear regression, ANOVA, etc., lies in the structure of $X$ and subsequent interpretation of the parameters $\beta$. 
 This is a very powerful idea that unites many superficially disparate approaches. 
+It also is the reason that these models are considered "linear", even though a regression line might by quite non-linear (e.g., polynomial regression). 
+These models are linear in their parameters, meaning that our expected value for the response $y$ is a **linear combination** (formal notion) of the parameters. 
+If a vector of expected values for $y$ in some model cannot be represented as $X \beta$, then it is not a linear model. 
 
-For instance, in the model of the mean, $X$ is an $n$ by $1$ matrix, with each element equal to $1$ (i.e. a vector of ones). 
+In the model of the mean, $X$ is an $n$ by $1$ matrix, with each element equal to $1$ (i.e. a vector of ones). 
 With linear regression, $X$'s first column is all ones (corresponding to the intercept parameter), and the second column contains the values of the covariate $x$. 
 In ANOVA, the design matrix $X$ will differ between the means and effects parameterizations. 
 With a means parameterization, the entries in column $j$ will equal one if observation (row) $i$ is in group $j$, and entries are zero otherwise. 
-Can you figure out the structure of $X$ with R's default effects parameterization?
-You can check your work with `model.matrix(m)`, where `m` is a model that you've fitted with `lm`.
 If you are not comfortable with matrix multiplication, it's worth investing some effort so that you can understand why $X\beta$ is such a powerful construct. 
+
+>Can you figure out the structure of $X$ with R's default effects parameterization?
+>You can check your work with `model.matrix(m)`, where `m` is a model that you've fitted with `lm`.
+
+## Interactions between covariates
+
+Often, the effect of one covariate depends on the value of another covariate. 
+This is referred to as "interaction" between the covariates. 
+Interactions can exist between two or more continuous and/or nominal covariates. 
+These situations have special names in the classical statistics literature. 
+For example, models with interactions between nominal covariates fall under "factorial ANOVA", those with interactions between a continuous and a nominal covariate are referred to as "analysis of covariance (ANCOVA)". 
+Here we prefer to consider these all as special cases of general linear models. 
+
+### Interactions between two continuous covariates
+
+Here we demonstrate simulation and estimation for a model with an interaction between two continuous covariates. 
+Notice that in the simulation, we have exploited the $X \beta$ construct to generate a vector of expected values for $y$. 
+
+
+```r
+n <- 100
+x1 <- rnorm(n)
+x2 <- rnorm(n)
+beta <- rnorm(4)
+sigma <- 1
+X <- matrix(c(rep(1, n), x1, x2, x1 * x2), nrow=n)
+mu_y <- X %*% beta
+y <- rnorm(n, mu_y, sigma)
+m <- lm(y ~ x1 * x2)
+summary(m)
+```
+
+```
+## 
+## Call:
+## lm(formula = y ~ x1 * x2)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -2.4492 -0.6063 -0.1287  0.5468  3.2989 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  0.57105    0.10297   5.546 2.57e-07 ***
+## x1          -0.76436    0.09695  -7.884 4.99e-12 ***
+## x2           0.12696    0.11702   1.085    0.281    
+## x1:x2        0.70009    0.09735   7.192 1.40e-10 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.9879 on 96 degrees of freedom
+## Multiple R-squared:  0.5134,	Adjusted R-squared:  0.4982 
+## F-statistic: 33.76 on 3 and 96 DF,  p-value: 5.491e-15
+```
+
+Visualizing these models is tricky, because we are in 3d space (with dimensions $x_1$, $x_2$, and $y$), but contour plots can be effective and leverage peoples' understanding of topographic maps. 
+
+
+```r
+# visualizing the results in terms of the linear predictor
+lo <- 40
+x1seq <- seq(min(x1), max(x1), length.out = lo)
+x2seq <- seq(min(x2), max(x2), length.out = lo)
+g <- expand.grid(x1=x1seq, x2=x2seq)
+g$e_y <- beta[1] + beta[2] * g$x1 + beta[3] * g$x2 + beta[4] * g$x1 * g$x2
+ggplot(g, aes(x=x1, y=x2)) + 
+  geom_tile(aes(fill=e_y)) + 
+  stat_contour(aes(z=e_y), col='grey') + 
+  scale_fill_gradient2() + 
+  geom_point(data=data.frame(x1, x2))
+```
+
+![](main_files/figure-html/unnamed-chunk-26-1.png) 
+
+Alternatively, you might check out the `effects` package:
+
+
+```r
+library(effects)
+plot(allEffects(m))
+```
+
+![](main_files/figure-html/unnamed-chunk-27-1.png) 
+
+### Interactions between two categorical covariates
+
+Here we demonstrate interaction between two categorical covariates, using the `diamonds` dataset which is in the `ggplot2` package.t
+We are interested in the relationship between diamond price, cut quality, and color.
+
+
+```r
+str(ToothGrowth)
+```
+
+```
+## 'data.frame':	60 obs. of  3 variables:
+##  $ len : num  4.2 11.5 7.3 5.8 6.4 10 11.2 11.2 5.2 7 ...
+##  $ supp: Factor w/ 2 levels "OJ","VC": 2 2 2 2 2 2 2 2 2 2 ...
+##  $ dose: num  0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+```
+
+```r
+ToothGrowth$dose <- factor(ToothGrowth$dose)
+ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) + 
+  geom_point()
+```
+
+![](main_files/figure-html/unnamed-chunk-28-1.png) 
+
+In general, visualizing the raw data is a good idea. 
+However, we might also be interested in a table with group-wise summaries, such as the sample means, standard deviations, and sample sizes. 
+
+
+```r
+library(dplyr)
+ToothGrowth %>%
+  group_by(dose, supp) %>%
+  summarize(mean = mean(len), 
+            sd = sd(len), 
+            n = n())
+```
+
+```
+## Source: local data frame [6 x 5]
+## Groups: dose [?]
+## 
+##     dose   supp  mean       sd     n
+##   (fctr) (fctr) (dbl)    (dbl) (int)
+## 1    0.5     OJ 13.23 4.459709    10
+## 2    0.5     VC  7.98 2.746634    10
+## 3      1     OJ 22.70 3.910953    10
+## 4      1     VC 16.77 2.515309    10
+## 5      2     OJ 26.06 2.655058    10
+## 6      2     VC 26.14 4.797731    10
+```
+
+We can construct a model to estimate the effect of dose, supplement, and their interaction. 
+
+
+```r
+m <- lm(len ~ dose * supp, data = ToothGrowth)
+summary(m)
+```
+
+```
+## 
+## Call:
+## lm(formula = len ~ dose * supp, data = ToothGrowth)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -8.20  -2.72  -0.27   2.65   8.27 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)    13.230      1.148  11.521 3.60e-16 ***
+## dose1           9.470      1.624   5.831 3.18e-07 ***
+## dose2          12.830      1.624   7.900 1.43e-10 ***
+## suppVC         -5.250      1.624  -3.233  0.00209 ** 
+## dose1:suppVC   -0.680      2.297  -0.296  0.76831    
+## dose2:suppVC    5.330      2.297   2.321  0.02411 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 3.631 on 54 degrees of freedom
+## Multiple R-squared:  0.7937,	Adjusted R-squared:  0.7746 
+## F-statistic: 41.56 on 5 and 54 DF,  p-value: < 2.2e-16
+```
+
+This summary gives the effects-parameterization version of the summary. 
+The "(Intercept)" refers to the combination of factor levels that occur first alphabetically: in this case, a dose of 0.5 with the "OJ" supplement. 
+The coefficients for `dose1` and `dose2` represent estimated contrasts for these two groups relative to the intercept. 
+The coefficient for `suppVC` represents the contrast between the "VC" and "OJ" levels of supplement when the dose is 0.5.
+The interaction terms represent the difference in the effect of VC for `dose1` and `dose2` relative to a dose of 0.5. 
+None of this is particularly intuitive, but this information can be gleaned by inspecting the design matrix $X$ produced by `lm` in the process of fitting the model. 
+
+
+```r
+model.matrix(m)
+```
+
+```
+##    (Intercept) dose1 dose2 suppVC dose1:suppVC dose2:suppVC
+## 1            1     0     0      1            0            0
+## 2            1     0     0      1            0            0
+## 3            1     0     0      1            0            0
+## 4            1     0     0      1            0            0
+## 5            1     0     0      1            0            0
+## 6            1     0     0      1            0            0
+## 7            1     0     0      1            0            0
+## 8            1     0     0      1            0            0
+## 9            1     0     0      1            0            0
+## 10           1     0     0      1            0            0
+## 11           1     1     0      1            1            0
+## 12           1     1     0      1            1            0
+## 13           1     1     0      1            1            0
+## 14           1     1     0      1            1            0
+## 15           1     1     0      1            1            0
+## 16           1     1     0      1            1            0
+## 17           1     1     0      1            1            0
+## 18           1     1     0      1            1            0
+## 19           1     1     0      1            1            0
+## 20           1     1     0      1            1            0
+## 21           1     0     1      1            0            1
+## 22           1     0     1      1            0            1
+## 23           1     0     1      1            0            1
+## 24           1     0     1      1            0            1
+## 25           1     0     1      1            0            1
+## 26           1     0     1      1            0            1
+## 27           1     0     1      1            0            1
+## 28           1     0     1      1            0            1
+## 29           1     0     1      1            0            1
+## 30           1     0     1      1            0            1
+## 31           1     0     0      0            0            0
+## 32           1     0     0      0            0            0
+## 33           1     0     0      0            0            0
+## 34           1     0     0      0            0            0
+## 35           1     0     0      0            0            0
+## 36           1     0     0      0            0            0
+## 37           1     0     0      0            0            0
+## 38           1     0     0      0            0            0
+## 39           1     0     0      0            0            0
+## 40           1     0     0      0            0            0
+## 41           1     1     0      0            0            0
+## 42           1     1     0      0            0            0
+## 43           1     1     0      0            0            0
+## 44           1     1     0      0            0            0
+## 45           1     1     0      0            0            0
+## 46           1     1     0      0            0            0
+## 47           1     1     0      0            0            0
+## 48           1     1     0      0            0            0
+## 49           1     1     0      0            0            0
+## 50           1     1     0      0            0            0
+## 51           1     0     1      0            0            0
+## 52           1     0     1      0            0            0
+## 53           1     0     1      0            0            0
+## 54           1     0     1      0            0            0
+## 55           1     0     1      0            0            0
+## 56           1     0     1      0            0            0
+## 57           1     0     1      0            0            0
+## 58           1     0     1      0            0            0
+## 59           1     0     1      0            0            0
+## 60           1     0     1      0            0            0
+## attr(,"assign")
+## [1] 0 1 1 2 3 3
+## attr(,"contrasts")
+## attr(,"contrasts")$dose
+## [1] "contr.treatment"
+## 
+## attr(,"contrasts")$supp
+## [1] "contr.treatment"
+```
+
+Or, if you like, inspecting the design matrix along with the dataset to get a better sense for how it relates to the factor levels:
+
+
+```r
+cbind(model.matrix(m), ToothGrowth)
+```
+
+```
+##    (Intercept) dose1 dose2 suppVC dose1:suppVC dose2:suppVC  len supp dose
+## 1            1     0     0      1            0            0  4.2   VC  0.5
+## 2            1     0     0      1            0            0 11.5   VC  0.5
+## 3            1     0     0      1            0            0  7.3   VC  0.5
+## 4            1     0     0      1            0            0  5.8   VC  0.5
+## 5            1     0     0      1            0            0  6.4   VC  0.5
+## 6            1     0     0      1            0            0 10.0   VC  0.5
+## 7            1     0     0      1            0            0 11.2   VC  0.5
+## 8            1     0     0      1            0            0 11.2   VC  0.5
+## 9            1     0     0      1            0            0  5.2   VC  0.5
+## 10           1     0     0      1            0            0  7.0   VC  0.5
+## 11           1     1     0      1            1            0 16.5   VC    1
+## 12           1     1     0      1            1            0 16.5   VC    1
+## 13           1     1     0      1            1            0 15.2   VC    1
+## 14           1     1     0      1            1            0 17.3   VC    1
+## 15           1     1     0      1            1            0 22.5   VC    1
+## 16           1     1     0      1            1            0 17.3   VC    1
+## 17           1     1     0      1            1            0 13.6   VC    1
+## 18           1     1     0      1            1            0 14.5   VC    1
+## 19           1     1     0      1            1            0 18.8   VC    1
+## 20           1     1     0      1            1            0 15.5   VC    1
+## 21           1     0     1      1            0            1 23.6   VC    2
+## 22           1     0     1      1            0            1 18.5   VC    2
+## 23           1     0     1      1            0            1 33.9   VC    2
+## 24           1     0     1      1            0            1 25.5   VC    2
+## 25           1     0     1      1            0            1 26.4   VC    2
+## 26           1     0     1      1            0            1 32.5   VC    2
+## 27           1     0     1      1            0            1 26.7   VC    2
+## 28           1     0     1      1            0            1 21.5   VC    2
+## 29           1     0     1      1            0            1 23.3   VC    2
+## 30           1     0     1      1            0            1 29.5   VC    2
+## 31           1     0     0      0            0            0 15.2   OJ  0.5
+## 32           1     0     0      0            0            0 21.5   OJ  0.5
+## 33           1     0     0      0            0            0 17.6   OJ  0.5
+## 34           1     0     0      0            0            0  9.7   OJ  0.5
+## 35           1     0     0      0            0            0 14.5   OJ  0.5
+## 36           1     0     0      0            0            0 10.0   OJ  0.5
+## 37           1     0     0      0            0            0  8.2   OJ  0.5
+## 38           1     0     0      0            0            0  9.4   OJ  0.5
+## 39           1     0     0      0            0            0 16.5   OJ  0.5
+## 40           1     0     0      0            0            0  9.7   OJ  0.5
+## 41           1     1     0      0            0            0 19.7   OJ    1
+## 42           1     1     0      0            0            0 23.3   OJ    1
+## 43           1     1     0      0            0            0 23.6   OJ    1
+## 44           1     1     0      0            0            0 26.4   OJ    1
+## 45           1     1     0      0            0            0 20.0   OJ    1
+## 46           1     1     0      0            0            0 25.2   OJ    1
+## 47           1     1     0      0            0            0 25.8   OJ    1
+## 48           1     1     0      0            0            0 21.2   OJ    1
+## 49           1     1     0      0            0            0 14.5   OJ    1
+## 50           1     1     0      0            0            0 27.3   OJ    1
+## 51           1     0     1      0            0            0 25.5   OJ    2
+## 52           1     0     1      0            0            0 26.4   OJ    2
+## 53           1     0     1      0            0            0 22.4   OJ    2
+## 54           1     0     1      0            0            0 24.5   OJ    2
+## 55           1     0     1      0            0            0 24.8   OJ    2
+## 56           1     0     1      0            0            0 30.9   OJ    2
+## 57           1     0     1      0            0            0 26.4   OJ    2
+## 58           1     0     1      0            0            0 27.3   OJ    2
+## 59           1     0     1      0            0            0 29.4   OJ    2
+## 60           1     0     1      0            0            0 23.0   OJ    2
+```
+
+Often, researchers want to know if interactions need to be included in the model. 
+From a null hypothesis significance testing perspective, we can evaluate the 'significance' of the interaction term as follows: 
+
+
+```r
+anova(m)
+```
+
+```
+## Analysis of Variance Table
+## 
+## Response: len
+##           Df  Sum Sq Mean Sq F value    Pr(>F)    
+## dose       2 2426.43 1213.22  92.000 < 2.2e-16 ***
+## supp       1  205.35  205.35  15.572 0.0002312 ***
+## dose:supp  2  108.32   54.16   4.107 0.0218603 *  
+## Residuals 54  712.11   13.19                      
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+We find that the interaction between dose and supplement is statistically significant, meaning that if we assume that there is no interaction, it is unlikely to observe data that are as or more extreme as what we have observed over the course of infinitely many replicated experiments that will probably never occur.
+Although this is far from intuitive, this approach has been widely used.
+We will introduce a more streamlined procedure in chapter 3 that 1) does not assume that the effect is zero to begin with, and 2) does not necessarily invoke a hypothetical infinite number of replicated realizations of the data, conditional on one particular set of parameters. 
+An alternative approach would be to use information theoretics to decide whether the interaction is warranted:
+
+
+```r
+m2 <- lm(len ~ dose + supp, data = ToothGrowth)
+AIC(m, m2)
+```
+
+```
+##    df      AIC
+## m   7 332.7056
+## m2  5 337.2013
+```
+
+In the past decade following Burnham and Anderson's book on the topic, ecologists have leaned heavily on Akaike's information criterion (AIC), which is a relative measure of model quality (balancing goodness of fit with model complexity). 
+Here we see that the original model `m` with interaction has a lower AIC value, and is therefore better supported. 
+AIC can be considered to be similar to cross validation, approximating the ability of a model to predict future data.
+
+Being somewhat lazy, we might again choose to plot the results of this model using the `effects` package. 
+
+
+```r
+plot(allEffects(m))
+```
+
+![](main_files/figure-html/unnamed-chunk-35-1.png) 
+
+This is less than satisfying, as it does not show any data. 
+All we see is model output. 
+If the model is crap, then the output and these plots are also crap. 
+But, evaluating the crappiness of the model is difficult when there are no data shown.
+Ideally, the data can be shown along with the estimated group means and some indication of uncertainty. 
+If we weren't quite so lazy, we could use the `predict` function to obtain confidence intervals for the means of each group. 
+
+
+```r
+# construct a new data frame for predictions
+g <- expand.grid(supp = levels(ToothGrowth$supp), 
+                 dose = levels(ToothGrowth$dose))
+p <- predict(m, g, interval = 'confidence', type='response')
+predictions <- cbind(g, data.frame(p))
+
+ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) + 
+  geom_segment(data=predictions, 
+               aes(y=lwr, yend=upr, 
+                   xend=interaction(dose, supp)), col='red') + 
+  geom_point(data=predictions, aes(y=fit), color='red', size=2, shape=2) + 
+  geom_jitter(position = position_jitter(width=.1), shape=1) + 
+  ylab("Length")
+```
+
+![](main_files/figure-html/unnamed-chunk-36-1.png) 
+
+This plot is nice because we can observe the data along with the model output. 
+This makes it easier for readers to understand how the model relates to, fits, and does not fit the data.
+If you wish to obscure the data, you could make a bar plot with error pars to represent the standard errors. 
+Although "dynamite" plots are horrifically common, we shall not include one here and we strongly recommend that you never produce such a plot ([more here](http://biostat.mc.vanderbilt.edu/wiki/pub/Main/TatsukiRcode/Poster3.pdf)). 
+
+### Interactions between continuous and categorical covariates
+
+Sometimes, we're interested in interactions between continuous or numeric covariates and another covariates with discrete categorical levels. 
+Again, this falls under the broad class of models used in analysis of covariance (ANCOVA). 
+
+
+```r
+x1 <- rnorm(n)
+x2 <- factor(sample(c('A', 'B'), n, replace=TRUE))
+
+# generate slopes and intercepts for the first and second groups
+a <- rnorm(2)
+b <- rnorm(2)
+sigma <- .4
+
+X <- matrix(c(ifelse(x2 == 'A', 1, 0), 
+              ifelse(x2 == 'B', 1, 0), 
+              ifelse(x2 == 'A', x1, 0), 
+              ifelse(x2 == 'B', x1, 0)
+            ), nrow=n)
+
+mu_y <- X %*% c(a, b)
+y <- rnorm(n, mu_y, sigma)
+plot(x1, y, col=x2, pch=19)
+legend('topright', col=1:2, legend=c('Group A', 'Group B'), pch=19)
+```
+
+![](main_files/figure-html/unnamed-chunk-37-1.png) 
+
+Here the intercepts and slopes are allowed to vary for two groups. 
+We can fit a model with an interaction between these covariates. 
+The intercepts and slopes are estimated separately for the two groups. 
+
+
+```r
+m <- lm(y ~ x1 * x2)
+summary(m)
+```
+
+```
+## 
+## Call:
+## lm(formula = y ~ x1 * x2)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.91209 -0.25356  0.00598  0.24408  0.79221 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -0.98204    0.05873 -16.722  < 2e-16 ***
+## x1           0.70397    0.05924  11.883  < 2e-16 ***
+## x2B          0.91501    0.07886  11.603  < 2e-16 ***
+## x1:x2B      -0.54765    0.08585  -6.379 6.26e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.3886 on 96 degrees of freedom
+## Multiple R-squared:  0.722,	Adjusted R-squared:  0.7133 
+## F-statistic: 83.09 on 3 and 96 DF,  p-value: < 2.2e-16
+```
+
+Let's plot the lines of best fit along with the data. 
+
+
+```r
+plot(x1, y, col=x2, pch=19)
+legend('topright', col=1:2, legend=c('Group A', 'Group B'), pch=19)
+abline(coef(m)[1], coef(m)[2])
+abline(coef(m)[1] + coef(m)[3], coef(m)[2] + coef(m)[4], col='red')
+```
+
+![](main_files/figure-html/unnamed-chunk-39-1.png) 
+
+The `abline` function, used above, adds lines to plots based on a y-intercept (first argument) and a slope (second argument). 
+Do you understand why the particular coefficients that we used as inputs provide the desired intercepts and slopes for each group? 
 
 ## Further reading
 
