@@ -1,0 +1,20 @@
+Chapter 6: Partial pooling and likelihood
+==============================
+
+The main dish. I'd like to avoid a recipe-based approach where we discuss varying intercept and varying slope models as primary objectives. Instead, I think it's important to cover these topics as special cases of the general approach of hierarchical modeling as a means to impose probabilistic structures on parameters. From that perspective, students should be able to better extend these methods for their own work.
+
+#### Priorities
+
+- definition
+- review previous examples
+- hyperparameters (they've always been there even when we don't acknowledge them)
+- varying intercepts (NBA freethrow example) with `lme4`
+- partial pooling
+- clearing up confusion about nestedness
+- simple hierarchical models with likelihood
+- continous predictors for multiple levels
+
+#### Optional
+
+- plotting estimates for different levels from lme4 models
+

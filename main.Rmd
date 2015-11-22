@@ -7,35 +7,36 @@ output:
     fig_caption: yes
     toc: yes
     keep_md: yes
+    highlight: pygments
   pdf_document:
     fig_caption: yes
     highlight: tango
     toc: yes
 ---
 
-```{r child = 'chapter1.Rmd'}
+```{r child = 'ch1/chapter1.Rmd'}
 ```
 
-```{r child = 'chapter2.Rmd'}
+```{r child = 'ch2/chapter2.Rmd'}
 ```
 
-```{r child = 'chapter3.Rmd'}
+```{r child = 'ch3/chapter3.Rmd'}
 ```
 
-```{r child = 'chapter4.Rmd'}
+```{r child = 'ch4/chapter4.Rmd'}
 ```
 
-```{r child = 'chapter5.Rmd'}
+```{r child = 'ch5/chapter5.Rmd'}
 ```
 
-```{r child = 'chapter6.Rmd'}
+```{r child = 'ch6/chapter6.Rmd'}
 ```
 
-```{r child = 'chapter7.Rmd'}
+```{r child = 'ch7/chapter7.Rmd'}
 ```
 
-```{r child = 'chapter8.Rmd'}
+```{r child = 'ch8/chapter8.Rmd'}
 ```
 
-```{r child = 'chapter9.Rmd'}
+```{r child = 'ch9/chapter9.Rmd'}
 ```

@@ -1,0 +1,22 @@
+Chapter 5: Binomial models
+===============
+
+Here, the students will continue to use a combination of methods for implementation. Key points to take away from this section include the properties/behavior of bionomial models, ways to check binomial modles, and a hint that Bayesian approaches are going to be more flexible.  The binomial-Poisson hierarchical model is a classic that should reinforce the notion that Bayesian approaches will generally be easier for more complex examples.
+
+#### Priorities
+
+- binomial distribution (relationship between mean and variance)
+- logit link as a map
+- proportion vs. binary models (will help with understanding hierarchical models later)
+- implementation with `glm`
+- overdispersion in proportion models and understanding the difference between individual and group level probabilities
+- implementation with  Stan, JAGS
+- separation
+- hierarchical model number 1: occupancy model (a classic) (maybe, or we could do it later)
+  - review marginalization 
+- graphical displays
+- model checking
+
+#### Optional
+
+- simulation of data & parameter recovery
