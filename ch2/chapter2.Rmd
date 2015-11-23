@@ -138,7 +138,14 @@ MLE_dsearch
 
 Finding maxima and minima of functions is a common operation, and there are many algorithms that have been developed to accomplish these tasks. 
 Some of these algorithms are included in the base R function `optim()`. 
-We need to provide some initial values for the parameters and a function to minimize (if we find the minimum of the negative log-likelihood, then we have found the MLE). 
+
+Optimization routines have an easier time optimizing in unconstrained space, where parameters can be anywhere between $-\infty$ and $\infty$. 
+However, we are trying to optimize a parameter that must be positive, $\sigma$. 
+We can transform $\sigma$ so that we can optimize over unconstrained space: `log` maps sigma from its constrained space $(0, \infty)$ to unconstrained space $(-\infty, \infty)$, and the `exp` function maps from the unconstrained space back to the constrained space (and the scale of the parameter).
+This trick shows up later in the context of link-functions for generalized linear models, where we transform a constrained linear predictor to unconstrained space while estimating parameters. 
+
+We need to provide some initial values for the parameters and a function to minimize. 
+If we find the minimum of the negative log-likelihood, then we have found the MLE. 
 
 ```{r}
 # writing a negative log-likelihood function
