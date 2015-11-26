@@ -252,11 +252,11 @@ As we can see, the observed variance is more than twice the expected variance un
 We will expand our model so that we can include some overdispersion. 
 First, we will allow for additional plot-level variance by adding a term to our linear predictor:
 
-$$y \sim Poisson(\lambda)$$
+$$y_i \sim Poisson(\lambda_i)$$
 
-$$log(\lambda) = X \beta + \epsilon$$
+$$log(\lambda_i) = X_i' \beta + \epsilon_i$$
 
-$$\epsilon \sim Normal(0, \sigma)$$
+$$\epsilon_i \sim Normal(0, \sigma)$$
 
 $$\sigma \sim halfCauchy(0, 2)$$
 
@@ -404,3 +404,9 @@ abline(v = var(stan_d$y), col=2, lwd=3)
 ```
 
 Again, the replicated datasets that are simulated from the posterior predictive distribution now have variance consistent with the observed data. 
+
+## Further reading
+
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 6.
+
+Gelman et al. 2014. *Bayesian data analysis. Third edition*. Chapter 16.

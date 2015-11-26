@@ -1,22 +1,291 @@
 Chapter 5: Binomial models
-===============
+==========================
 
-Here, the students will continue to use a combination of methods for implementation. Key points to take away from this section include the properties/behavior of bionomial models, ways to check binomial modles, and a hint that Bayesian approaches are going to be more flexible.  The binomial-Poisson hierarchical model is a classic that should reinforce the notion that Bayesian approaches will generally be easier for more complex examples.
+## Big picture
 
-#### Priorities
+The binomial distribution is used all over the place in ecology, so it's important to familiarize yourself with the properties/behavior of the bionomial distribution. 
+In this section we will cover the binomial in the context of glms, but we will also point out some useful hierarchical models that include the binomial distribution, including occupancy models, N-mixture models, and binomial-Poisson hierarchical models. 
 
-- binomial distribution (relationship between mean and variance)
-- logit link as a map
-- proportion vs. binary models (will help with understanding hierarchical models later)
+#### Learning goals
+
+- properties of the binomial distribution
+- link functions for the binomial
 - implementation with `glm`
-- overdispersion in proportion models and understanding the difference between individual and group level probabilities
-- implementation with  Stan, JAGS
-- separation
-- hierarchical model number 1: occupancy model (a classic) (maybe, or we could do it later)
-  - review marginalization 
+- binomial overdispersion
+- implementation with Stan
+- occupancy models
 - graphical displays
 - model checking
-
-#### Optional
-
 - simulation of data & parameter recovery
+
+## Binomial generalized linear models
+
+The binomial distribution is used for integer valued random variables that represent the number of successes in $k$ independent trials, each with probability $p$. 
+For instance, the number of chicks surviving would be a binomial random variable, with the number of eggs laid $k$ and a survival probability $p$. 
+Usually, $k$ is known and $p$ is estimated, but there are some useful hierarchical models that treat $k$ as a parameter that we will cover later (e.g., N-mixture models, and binomial-Poisson hierarchy models). 
+When $k=1$, the binomial distribution is also called the Bernoulli distribution.
+In binomial glms, a link function is needed to map $p$ from the constrained probability space to an unconstrained space. 
+Usually either the logit or probit link functions are used, and both are inverse cumulative distribution functions for other distributions (the logistic and the Gaussian, respectively). 
+We can write a binomial glm as follows:
+
+$$y \sim Binomial(p, k)$$
+
+$$logit(p) = X \beta$$
+
+Where $logit(p) = log(p / (1-p))$, and $\beta$ is a parameter vector to be estimated. 
+
+## Simulation and estimation
+
+Imagine that we're interested in whether different egg companies are more or less likely to have broken eggs in our neighborhood grocery store, and we peek into 20 cartons from each of 4 companies, each with 12 eggs per carton.
+We know $k=12$ for each carton, and we want to know $p_1, ..., p_4$, the probability of broken eggs for the 4 companies.
+This is analogous to ANOVA, but with a binomial response. 
+
+```{r}
+m <- 4
+n_each <- 20
+company <- rep(LETTERS[1:m], each = n_each)
+p <- rep(c(.02, .01, .05, .1), each = n_each)
+n <- length(p)
+k <- rep(12, n)
+broken <- rbinom(n, size = k, prob = p)
+not_broken <- 12 - broken
+boxplot(broken ~ company)
+```
+
+### Estimation with glm
+
+We can estimate the probabilities for each company as follows: 
+
+```{r}
+m <- glm(cbind(broken, not_broken) ~ 0 + company, family = binomial)
+summary(m)
+```
+
+By default the coefficients are returned on the logit scale. 
+We can back-transform with the cumulative distribution function for the logistic distribution, `plogis()`:
+
+```{r}
+plogis(coef(m))
+plogis(confint(m))
+```
+
+### Estimation with Stan
+
+To do a Bayesian analysis we need priors for $\beta$, for instance so that our model is:
+
+$$y \sim Binomial(p, k)$$
+
+$$logit(p) = X \beta$$
+
+$$\beta ~ Normal(0, 2)$$
+
+Where the normal(0, 2) prior for beta is fairly uninformative on the logit-scale. 
+Note that in this example, this basically communicates the idea that we have never bought eggs in a carton before. 
+Realistically, we would select priors that are concentrated toward small probabilities!
+
+Our Stan model for a binomial glm (`binomial_glm.stan`) might look like this: 
+
+```
+data {
+  int n; // sample size
+  int p; // number of coefficients
+  matrix[n, p] X;
+  int y[n];
+  int k[n];
+}
+
+parameters {
+  vector[p] beta;
+}
+
+model {
+  beta ~ normal(0, 2);
+  y ~ binomial_logit(k, X * beta);
+}
+```
+
+We can recycle the design matrix made with glm:
+
+```{r, message=FALSE, warnings=FALSE, results='hide'}
+library(rstan)
+X <- model.matrix(m)
+stan_d <- list(n = nrow(X), 
+               p = ncol(X), 
+               X = X, 
+               y = broken, 
+               k = k)
+out <- stan('binomial_glm.stan', data = stan_d)
+```
+
+
+```{r}
+out
+traceplot(out)
+plot(out)
+pairs(out)
+```
+
+How might we graph the results? 
+Ideally our plot should show the data and our model output (in this case, the expected number of broken eggs). 
+In this case, we might try something like this:
+
+```{r, message=FALSE}
+# put data into a data frame
+d <- data.frame(broken, company)
+
+# create data frame for posterior estimates
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(grid)
+
+# extract posterior samples and get summaries
+post <- out %>%
+  extract() %>%
+  melt() %>%
+  subset(L1 != 'lp__') %>%
+  group_by(Var2) %>%
+  summarize(median = 12 * plogis(median(value)), 
+            lo = 12 * plogis(quantile(value, .025)), 
+            hi = 12 * plogis(quantile(value, .975)))
+post$company <- unique(company)
+
+# plot results
+ggplot(d, aes(x=company, y=broken)) + 
+  geom_segment(aes(xend=company, y=lo, yend=hi), data=post, 
+               size=3, col='blue', alpha=.3) + 
+  geom_point(aes(x=company, y=median), data=post, 
+             col='blue', size=3) + 
+  geom_jitter(position=position_jitter(width=.1, height=.1), 
+              shape=1) + 
+  ylab("Number of broken eggs")
+```
+
+## Overdispersion
+
+The binomial distribution has mean $np$ and variance $np(1-p)$, but sometimes there is more variation than we would expect from the binomial distribution. 
+For instance, in the previous example, we should expect sources of variation other than the companies that produce and distribute the eggs. 
+Any particular carton may have a different history than other cartons due to chance - maybe the stocker set one carton down hard, or an unattended child opened a carton and broke an egg then closed the carton, etc. 
+Though binomial overdispersion receives little attention in ecology compared to Poisson overdispersion, it is a common problem in real-world data. 
+As with the Poisson example, you can use posterior predictive checks to evaluate whether your model is underrepresenting the variance in binomial observations. 
+
+### Binomial-normal model
+
+One common solution to overdispersion is the addition of a normally distributed random effect to the linear predictor. 
+This represents variation at the level of individual observations. 
+
+$$y_i \sim Binomial(p_i, k_i)$$
+
+$$logit(p_i) = X_i' \beta + \epsilon_i$$
+
+$$\beta \sim Normal(0, 2)$$
+
+$$\epsilon_i \sim Normal(0, \sigma)$$
+
+$$\sigma \sim halfCauchy(0, 2)$$
+
+This is very similar to the lognormal overdispersion strategy for Poisson models covered in the previous chapter. 
+
+### Beta-binomial model
+
+Another option is to use a beta distribution as a prior for the probability of success parameter $p$:
+
+$$y \sim Binomial(p, k)$$
+
+$$ p \sim beta(\alpha, \beta)$$
+
+This strategy tends to be used infrequently in ecology, and we do not cover it in depth here, but there are good resources on the web for implementing beta-binomial models in Stan [here](http://stats.stackexchange.com/questions/96481/how-to-specify-a-bayesian-binomial-model-with-shrinkage-to-the-population), and [here](http://wiekvoet.blogspot.com/2014/08/beta-binomial-revisited.html).
+
+## Occupancy models
+
+Occupancy models represent the presence or absence of a species from a location as a Bernoulli random variable $Z$, with $z=0$ corresponding to absence and $z=1$ corresponding to presence. 
+If the species is present $z=1$, it will be detected on a survey with probability $p$.
+So, species may be present but undetected. 
+If a species is absent, it will not be detected (we assume no false detections), but species may be present and undetected. 
+
+We can write this as a hierarchical model with occurrence state $z$ treated as a binary latent (hidden) variable: 
+
+$$[z \mid \psi] \sim Bernoulli(\psi)$$
+
+$$[y \mid z, p] \sim Bernoulli(z p)$$
+
+If we wish to avoid the use of a discrete parameter, we can marginalize $z$ out of the posterior:
+
+$$[\psi, p \mid y] \propto \sum_z [y \mid z, p] [z \mid \psi] [p, \psi]$$
+
+$$[\psi, p \mid y] \propto  [p, \psi] \sum_z [y \mid z, p] [z \mid \psi]$$
+
+$$[\psi, p \mid y] \propto  [p, \psi] \big( [y \mid z=1, p] [z=1 \mid \psi] + [y \mid z=0, p] [z=0 \mid \psi] \big)$$
+
+$$[\psi, p \mid y] \propto  [p, \psi] \big( \psi Bernoulli(p) + (1-\psi) I(y = 0)  \big)$$
+
+where $I(y = 0)$ is an identity function that sets $y$ to zero because we assumed that there are no false detections when the species is absent. 
+Multiple surveys are necessary to identify $\psi$ and $p$, so that we can expand the likelihood to account of binomial observation histories, with $k$ surveys conducted per site, and observation history vectors $y_i$ for the $i^{th}$ site:
+
+$$[y_i \mid \psi_i, p_i] \begin{cases} \psi_i Binom(y_i, k) &\mbox{if } \sum y_i > 0 \\ 
+\psi_i Binom(0, k) + (1 - \psi) & otherwise \end{cases}$$
+
+If the organism was observed, then we know that any non-detections represent false absences. 
+If the organism was not observed, then it was either there and not observed (with probability $\psi_i Binom(0, k)$) or it was not there with probability $1 - \psi$. 
+This if-else structure can be exploited in Stan to implement this likelihood:
+
+```
+data { 
+   int<lower=0> nsite; 
+   int<lower=0> nsurvey; 
+   int<lower=0,upper=1> y[nsite,nsurvey]; 
+} 
+parameters { 
+   real<lower=0,upper=1> psi; 
+   real<lower=0,upper=1> p; 
+} 
+model { 
+   for (i in 1:nsite) { 
+     if (sum(y[i]) > 0)
+       // species was observed: it is there
+       increment_log_prob(log(psi) + bernoulli_log(y[i],p)); 
+     else 
+       // it may or may not be there
+       increment_log_prob(log_sum_exp(log(psi) + bernoulli_log(y[i],p), 
+                                      log1m(psi))); 
+   } 
+} 
+```
+
+Now let's simulate some occupancy data and fit the model:
+
+```{r, message=FALSE, warnings=FALSE, results='hide'}
+nsite <- 50
+nsurvey <- 3
+psi <- .4
+p <- .8
+z <- rbinom(nsite, 1, psi)
+y <- matrix(rbinom(nsite * nsurvey, 1, z * p), 
+            nrow=nsite)
+
+stan_d <- list(nsite = nsite, 
+               nsurvey = nsurvey, 
+               y = y)
+out <- stan('occupancy.stan', data = stan_d)
+```
+
+How did we do? 
+
+```{r}
+out
+traceplot(out)
+par(mfrow=c(1, 2))
+post <- extract(out)
+plot(density(post$psi), main=expression(psi))
+abline(v=psi, col='red', lwd=2)
+plot(density(post$p), main='p')
+abline(v=p, col='red', lwd=2)
+```
+
+This model can be extended to include covariates for $\psi$ and $p$ by making use of a link function and design matrices.
+
+## Further reading
+
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 5, 6.
+
+Gelman et al. 2014. *Bayesian data analysis. Third edition*. Chapter 16.

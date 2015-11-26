@@ -471,6 +471,6 @@ Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchic
 
 Hobbs and Hooten. 2015. *Bayesian models: a statistical primer for ecologists*. Chapter 7. 
 
-Gelman et al. 2014. *Bayesian data analysis. Third edition*. 
+Gelman et al. 2014. *Bayesian data analysis. Third edition*. Chapter 1-3.
 
 Ellison AM. 2004. Bayesian inference in Ecology. Ecology Letters 7: 509-520.

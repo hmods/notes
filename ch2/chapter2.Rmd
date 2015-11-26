@@ -87,12 +87,12 @@ mu <- 6
 sigma <- 3
 
 # simulate observations
-n <- 50
+n <- 200
 y <- rnorm(n, mu, sigma)
 
 # generate a grid of parameter values to search over
 g <- expand.grid(mu = seq(4, 8, length.out=100), 
-                 sigma=seq(2, 6, length.out=100))
+                 sigma=seq(2, 7, length.out=100))
 
 # evaluate the log-likelihood of the data for each parameter combination
 g$loglik <- rep(NA, nrow(g))
