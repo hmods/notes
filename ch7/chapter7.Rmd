@@ -1,28 +1,662 @@
 Chapter 7: Bayesian hierarchical models
 ============================
 
-#### Priorities
+## Big picture
+
+Everything that we've done so far in this course has laid a foundation to understand the main course: Bayesian hierarchical models. 
+
+#### Learning goals
 
 - varying intercepts (NBA freethrow example) with `Stan`
-- hierarchical models in Stan
-- highlight Bayesian connection to priors
-- classic examples: 
-    - hierarchical model number 1: occupancy model (a classic)
-    - hierarchical model: binomial-Poisson hierarchy (e.g. # eggs laid & survival)
-- introduction to the multivariate normal distribution
-- parameters for hierarchical variance parameters
+- Bayesian vs. MLE approaches
+- binomial-Poisson hierarchy (e.g. # eggs laid & survival)
+- non-centered parameterizations
+- multivariate normal distribution
+- priors for hierarchical variance parameters
 - prediction (new vs. observed groups)
-- priors 
-- note crossing of the 'ease' threshold (?)
+- connections to random, fixed, & mixed effects
 
+## Bayesian hierarchical models
 
-#### Optional
+The main difference between the hierarchical models of the previous chapter and Bayesian hierarchical models is the inclusion of a prior distribution on the hyperparameters (leading to each parameter being represented as a random variable with a probability distribution, consistent with the Bayesian philosophy). 
+The non-Bayesian hierarchical models of the previous chapter are semi-Bayesian in that they induce a prior distribution on some but not all parameters. 
+Fully Bayesian hierarchical models incorporate uncertainty in the hyperparameters, which is typically considerable. 
+Bayesian approaches tend to be much easier than frequentist or MLE approaches in terms of estimation, interval construction, and prediction for all but the simplest models. 
 
-- posterior prediction
-- basic Bayesian models in MCMCglmm
-- random effects, fixed effects, mixed effects models as special instances of hierarchical linear models
+Bayesian hierarchical models are an incredibly powerful and flexible tool for learning about the world. 
+Their usefulness is derived from the ability to combine simple model components to make models that are sufficient to represent even complex processes. 
+For instance, consider the following example: 
 
-#### Reading
+## Binomial-Poisson hierarchy
+
+Suppose you study birds, and you'd like to estimate fitness as measured by egg output and egg survival to fledging. 
+There are two response variables and they are connected. 
+On the one hand, you might be interested in a model that uses the number of eggs laid by individual $i$ as a response: 
+
+$$y_i \sim Poisson(\lambda)$$
+
+where $\lambda$ is the expected number of eggs laid. 
+
+Further, the number of surviving fledglings is a function of $Y_i$. 
+If each egg survives indepdently (or with the addtion of covariates, conditionally independently) with probability $p$, then the number of fledglings $Z_i$ can be considered a binomial random variable: 
+
+$$z_i \sim Binomial(y_i, p)$$
+
+The posterior distribution of the parameters can be written as:
+
+$$[ p, \lambda \mid y, z] = [z \mid y, p] [y \mid \lambda] [\lambda, p]$$
+
+This is a complicated model that arises from fairly simple parts. 
+We haven't yet specified the form of our prior distribution for $\lambda$ and $p$. 
+The simplest prior might be something that assumes that all individuals $i=1, ..., n$ have the same values. 
+For instance, suppose that we expected ahead of time that each bird would lay up to 7 eggs, with an expected value of about 2.5. 
+We might then choose a lognormal prior for $\lambda$, with mean 1 and standard deviation .5:
+
+```{r}
+x <- seq(0, 20, .01)
+dx <- dgamma(x, 2.5, scale=1.1)
+plot(x, dx, type='l', 
+     xlab=expression(lambda), 
+     ylab=expression(paste("[", lambda, "]")))
+
+# What is the 97.5% quantile?
+qgamma(.975, 2.5, scale=1.1)
+```
+
+If we thought that mean survival probability was about .375, but as low as zero and as high as .8, we could choose a beta prior for $p$
+
+```{r}
+x <- seq(0, 1, .01)
+dx <- dbeta(x, 3, 5)
+plot(x, dx, type='l', xlab='p', ylab='[p]')
+
+pbeta(.9, 3, 5)
+```
+
+These priors would complete our specification of our Bayesian hierarchical model. 
+
+$$y_i \sim Poisson(\lambda)$$
+
+$$z_i \sim Binomial(y_i, p)$$
+
+$$\lambda \sim gamma(2.5, 1.1)$$
+
+$$p \sim beta(3, 5)$$
+
+Suppose we have data from 100 females, and we'd like to update our priors given this new information. 
+First, visualizing the data a bit:
+
+```{r, message=FALSE}
+library(dplyr)
+library(ggplot2)
+d <- read.csv('eggs.csv')
+
+# calculate proportion of eggs surviving
+d <- d %>%
+  mutate(p_survive = fledglings / eggs)
+tbl_df(d)
+
+ggplot(d, aes(x=eggs)) + 
+  geom_histogram()
+
+ggplot(d, aes(x=p_survive)) + 
+  geom_histogram()
+```
+
+Notice that for birds that did not lay eggs, we have NA values in the proportion of eggs surviving. 
+As a result, these individuals will not provide information on $p$ in the above model, because they cannot contribute to a binomial likelihood with $k=0$.
+
+We can translate the model outlined above to Stan as follows to produce the file `eggs.stan`:
+
+```
+data {
+  // poisson data
+  int n;
+  int y[n];
+  
+  // binomial data
+  int n_b;
+  int k[n_b];
+  int z[n_b];
+}
+
+parameters {
+  real<lower=0> lambda;
+  real<lower=0, upper=1> p;
+}
+
+model {
+  // priors
+  lambda ~ gamma(2.5, 1.1);
+  p ~ beta(3, 5);
+  
+  // likelihood
+  y ~ poisson(lambda);
+  z ~ binomial(k, p);
+}
+```
+
+Now we can bundle our data to work with the model and estimate the parameters:
+
+```{r, message=FALSE, results='hide'}
+stan_d <- list(
+  n = nrow(d), 
+  y = d$eggs, 
+  n_b = sum(d$eggs > 0), 
+  k = d$eggs[d$eggs > 0], 
+  z = d$fledglings[d$eggs > 0]
+)
+
+library(rstan)
+m <- stan('eggs.stan', data=stan_d)
+```
+
+```{r}
+m
+traceplot(m)
+```
+
+## Non-centered parameterizations for random effects
+
+The previous model is fairly unsatisfactory in that it assumes that all individuals have the same fecundity and egg to fledgling survival. 
+Expecting that this assumption is probably false, we may wish to allow individuals to vary in these quantities. 
+One way to do this would be with a normal (on the link scale) random effect, exactly like log-normal overdispersion and logit-normal overdispersion for the Poisson and binomial examples covered earlier. 
+For instance, we might write such a model as:
+
+$$y_i \sim Poisson(\lambda)$$
+
+$$z_i \sim Binomial(y_i, p)$$
+
+$$log(\lambda) \sim N(\mu_\lambda, \sigma_\lambda)$$
+
+$$logit(p) \sim N(\mu_p, \sigma_p)$$
+
+$$\mu_\lambda \sim N(0, 1)$$
+
+$$\sigma_\lambda \sim halfNormal(0, 2)$$
+
+$$\mu_p \sim N(0, 2)$$
+
+$$\sigma_p \sim halfNormal(0, 1.5)$$
+
+For the purposes of illustration, we've provided somewhat vague priors, but one could adapt these to reflect the priors that we expressed in the simpler model. 
+Much has been written on how to choose priors for hierarchical variance parameters.
+The main take home is to avoid hard upper limits and instead to use priors that reflect your previous beliefs with soft constraints, such as half-Cauchy, half-t, or half-normal.
+See the further reading section for a good reference on selecting good priors for these hyperparameters. 
+In this model, the log fecundity and logit survival probabilities are drawn from independent normal distributions, allowing for individual variation around the population means. 
+
+Updating our model and calling it `egg_ranef.stan`, we might get:
+
+```
+data {
+  // poisson data
+  int n;
+  int y[n];
+  
+  // binomial data
+  int n_b;
+  int k[n_b];
+  int z[n_b];
+}
+
+parameters {
+  vector[n] log_lambda;
+  vector[n_b] logit_p;
+  real mu_lambda;
+  real mu_p;
+  real<lower=0> sigma_lambda;
+  real<lower=0> sigma_p;
+}
+
+model {
+  // priors
+  mu_lambda ~ normal(0, 1);
+  mu_p ~ normal(0, 2);
+  sigma_lambda ~ normal(0, 2);
+  sigma_p ~ normal(0, 1.5);
+  
+  log_lambda ~ normal(mu_lambda, sigma_lambda);
+  logit_p ~ normal(mu_p, sigma_p);
+  
+  // likelihood
+  y ~ poisson_log(log_lambda);
+  z ~ binomial_logit(k, logit_p);
+}
+```
+
+Fitting the new model:
+
+```{r, results='hide'}
+m <- stan('egg_ranef.stan', data=stan_d, 
+          pars=c('mu_lambda', 'mu_p', 'sigma_lambda', 'sigma_p', 'lp__'))
+```
+
+```{r}
+traceplot(m)
+m
+```
+
+It turns out that this parameterization is not optimal. 
+We can greatly increase the efficiency of our model by using a "non-centered" parameterization for the normal random effects. 
+The basis for this lies in the fact that we can recover a random vector $y \sim N(\mu, \sigma)$ by first generating a vector of standard normal variates: $y_{raw} \sim N(0, 1)$, and then translating the sample to the mean and rescaling all values by $\sigma$: 
+
+$$ y = \mu + y_{raw} \sigma $$
+
+This is more efficient because the MCMC algorithm used with Stan is highly optimized to sample from posteriors with geometry corresponding to N(0, 1) distributions. 
+This trick is incredibly useful for nearly all hierarchical models in Stan that use normal random effects.
+We can do this translation and scaling in the transformed parameters block, generating the following file called `egg_ncp.Stan`:
+
+```
+data {
+  // poisson data
+  int n;
+  int y[n];
+
+  // binomial data
+  int n_b;
+  int k[n_b];
+  int z[n_b];
+}
+
+parameters {
+  vector[n] log_lambdaR;
+  vector[n_b] logit_pR;
+  real mu_lambda;
+  real mu_p;
+  real<lower=0> sigma_lambda;
+  real<lower=0> sigma_p;
+}
+
+transformed parameters {
+  vector[n] log_lambda;
+  vector[n_b] logit_p;
+  
+  log_lambda <- mu_lambda + log_lambdaR * sigma_lambda;
+  logit_p <- mu_p + logit_pR * sigma_p;
+}
+
+model {
+  // priors
+  mu_lambda ~ normal(0, 1);
+  mu_p ~ normal(0, 2);
+  sigma_lambda ~ normal(0, 2);
+  sigma_p ~ normal(0, 1.5);
+
+  log_lambdaR ~ normal(0, 1);
+  logit_pR ~ normal(0, 1);
+
+  // likelihood
+  y ~ poisson_log(log_lambda);
+  z ~ binomial_logit(k, logit_p);
+}
+```
+
+Fitting our new model:
+
+```{r, results='hide'}
+m <- stan('egg_ncp.stan', data=stan_d)
+```
+
+```{r}
+traceplot(m, pars=c('mu_lambda', 'mu_p', 'sigma_lambda', 'sigma_p', 'lp__'))
+print(m, pars=c('mu_lambda', 'mu_p', 'sigma_lambda', 'sigma_p', 'lp__'))
+```
+
+We might be interested in whether there is any correlation between egg output and egg survival. 
+To explore this, we can plot the random effects on the link scale:
+
+```{r}
+post <- extract(m)
+ll_meds <- apply(post$log_lambda, 2, median)
+lp_meds <- apply(post$logit_p, 2, median)
+plot(exp(ll_meds[d$eggs > 0]), plogis(lp_meds))
+```
+
+That plot is not so informative, but if we are interested in the correlation, we can simply calculate the correlation for each draw to get the posterior distribution for the correlation. 
+This is one of the huge advantages of Bayesian inference: we can calculate the posterior distribution for any derived parameters using posterior draws. 
+
+```{r}
+n_iter <- length(post$lp__)
+cor_post <- rep(NA, n_iter)
+for (i in 1:n_iter){
+  cor_post[i] <- cor(post$log_lambda[i, d$eggs > 0], 
+                     post$logit_p[i, ])
+}
+hist(cor_post, breaks=seq(-1, 1, .02))
+```
+
+It appears that birds that produce many eggs tend to have higher per-egg survival. 
+But, we haven't included this correlation in the model explicitly. 
+Generally speaking correlations between two random variables A and B can result from three causal scenarios: 
+
+- A or B have a causal effect on eachother, directly or indirectly
+- A and B are both affected by some other quantity or quantities
+- we have conditioned on a variable that is influence by A and B (also known as Berkson's paradox)
+
+In this case, we can model correlation between these two latent quantities by way of multivariate normal random effects rather than two independent univariate normal random effects. 
+
+## Multivariate normal random effects
+
+In many cases, we have multiple random effects which may be correlated. 
+In these instances, many turn to the multivariate normal distribution, which generalizes the univariate normal distribution to N dimensions. 
+The multivariate normal distribution has two parameters: $\mu$, which is a vector with $N$ elements, each describing the mean of the distribution in each dimension, and $\Sigma$, an $N$ by $N$ covariance matrix that encodes the variance in each dimension and correlation among dimensions. 
+Any multivariate normal random vector will be a point in $N$ dimensional space. 
+
+Consider the bivariate normal distribution, a multivariate normal with $N=2$ dimensions. 
+The mean vector will have two elements $\mu_1$ and $\mu_2$, that provide the center of mass in the first and second dimension. 
+The covariance matrix will have two rows and columns. 
+We might write these parameters as follows: 
+
+$\boldsymbol{\mu} = \begin{bmatrix}
+\mu_1 \\
+\mu_2
+\end{bmatrix},$
+$\boldsymbol{\Sigma} = \begin{bmatrix}
+Cov[X_1, X_1] & Cov[X_1, X_2] \\
+Cov[X_2, X_1] & Cov[X_2, X_2]
+\end{bmatrix}$
+
+The element of $Sigma$ in the $i^{th}$ row and $j^{th}$ column describes the covariance between the $i^{th}$ and $j^{th}$ dimension. 
+By definition, the covariance between one random variable and itself (e.g., $Cov[X_1, X_1]$ and $Cov[X_2, X_2]$) is the variance of the random variable, $\sigma^2_{X_1}$ and $\sigma^2_{X_2}$.
+
+For concreteness, suppose that we're considering the following multivariate normal distribution: 
+
+$\boldsymbol{\mu} = \begin{bmatrix}
+0 \\
+0
+\end{bmatrix},$
+$\boldsymbol{\Sigma} = \begin{bmatrix}
+1 & 0.5 \\
+0.5 & 1
+\end{bmatrix}$
+
+We can visualize the density of this bivariate normal as with a heatmap: 
+
+```{r, echo=FALSE}
+# adapted from http://www.pitt.edu/~njc23/Lecture5.pdf 
+dmvnorm <- function(x, mu, Sigma) {
+  exp(-.5 * t(x-mu) %*% solve(Sigma) %*% (x - mu)) / sqrt(2 * pi * det(Sigma))
+}
+mu <- c(0, 0)
+Sigma <- matrix(c(1, .5, .5, 1), nrow=2)
+x <- seq(-3, 3, .05)
+y <- seq(-3, 3, .05)
+# Evaluate the bivariate normal density for each value of x and y
+z <- outer(x, y,
+  FUN=function(x, y, ...){
+    apply(cbind(x,y), 1, dmvnorm, ...)
+  }, 
+  mu=c(0,0), Sigma=Sigma)
+image(x, y, z, xlab=expression(y[1]), ylab=expression(y[2]), 
+      col=topo.colors(60),
+      main='Bivariate normal density')
+text(x=0, y=0, expression(mu), cex=2)
+```
+
+### Non-centered parameterization: multivariate normal
+
+As with univariate normal random effects, a noncentered parameterization can greatly improve MCMC convergence and efficiency. 
+To acheive this, we first define the Cholesky factor of a matrix $L$, which is lower triangular, and which equals sigma when multiplied by it's own transpose: $\Sigma = L L^{T}$. 
+Given $L$, which is a lower triangular $d$ by $d$ matrix, $\mu$, which is the mean vector with length $d$, and $z$, which is a vector of $d$ standard normal N(0, 1) deviates, we can generate a draw from $d$ dimensional multivariate normal distribution $MvN(\mu, \Sigma)$ as follows: 
+
+$$y = \mu + L z$$
+
+Sometimes, it is convenient to parameterize the multivariate normal in terms of a Cholesky decomposed correlation matrix $L_R$ such that $L_R L_R^T = R$ and a vector of standard deviations $\sigma$, which can be coerced into a diagonal matrix that has the same dimensions as the desired covariance matrix. 
+If we have these, then we can adapt the above equation to obtain:
+
+$$y = \mu + diag(\sigma) L_R z$$
+
+This parameterization is most useful for hierarchical models, because we can place separate priors on correlation matrices and on the standard deviations. 
+For correlation matrices, it is currently recommended to use LKJ priors, which can be specified on the cholesky decomposed matrix (obviating the need for Cholesky decompositions at each MCMC iteration). 
+The LKJ correlation distribution has one parameter that specifies how concentrated the correlations are around a uniform distribution $\eta = 1$, or the identity matrix with all correlations (non-diagonal elements) equal to zero when $\eta$ is very large. 
+An LKJ correlation with $\eta=2$ implies a prior in which correlations are somewhat concentrated on zero. 
+Below are the LKJ prior correlations implied by different values of $\eta$.
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+library(rstan)
+n <- 2
+
+m <- '
+data {
+  int n;
+  real eta;
+}
+parameters {
+  corr_matrix[n] R;
+}
+model {
+  R ~ lkj_corr(eta);
+}
+'
+eta <- 1
+mfit <- stan(model_code = m, iter=10000)
+post <- extract(mfit)
+par(mfrow=c(2, 2))
+br <- seq(-1, 1, .05)
+hist(post$R[, 1, 2], 
+     xlab=expression(rho), freq=FALSE, breaks=br,
+     main=expression(paste('LKJ prior: ', eta == 1)))
+eta <- 2
+mfit <- stan(model_code = m, iter=10000)
+post <- extract(mfit)
+hist(post$R[, 1, 2], 
+     xlab=expression(rho), freq=FALSE, breaks=br,
+     main=expression(paste('LKJ prior: ', eta == 2)))
+eta <- 4
+mfit <- stan(model_code = m, iter=10000)
+post <- extract(mfit)
+hist(post$R[, 1, 2], 
+     xlab=expression(rho), freq=FALSE, breaks=br,
+     main=expression(paste('LKJ prior: ', eta == 4)))
+eta <- 20
+mfit <- stan(model_code = m, iter=10000)
+post <- extract(mfit)
+hist(post$R[, 1, 2], 
+     xlab=expression(rho), freq=FALSE, breaks=br,
+     main=expression(paste('LKJ prior: ', eta == 20)))
+```
+
+Let's expand the above model to explicitly allow for correlation between egg survival and egg output. 
+This tends to be useful computationally when parameters are correlated, but it also may be of practical use if egg output or survival are incompletely observed and we'd like to predict the missing data using information on correlated quantities. 
+The main difference will be that instead of two separate univariate normal random effects, we instead have one bivariate normal distribution, and we're modeling correlation between the two dimensions. 
+
+$$y_i \sim Poisson(\lambda)$$
+
+$$z_i \sim Binomial(y_i, p)$$
+
+$$log(\lambda_i) = \alpha_{1i}$$
+
+$$logit(p) = \alpha_{2i}$$
+
+$$\alpha_i \sim N(\mu, \Sigma)$$
+
+$$\mu \sim N(0, 2)$$
+
+$$\Sigma = (diag(\sigma) L_R) (diag(\sigma) L_R)^T$$
+
+$$\sigma \sim halfNormal(0, 2)$$
+
+$$L_R \sim LKJcorr(2)$$
+
+With this new parameterization, we can estimate a random effect vector $\alpha_i$ of length 2 for each individual $i=1, ..., N$, with elements corresponding to the log expected number of eggs and logit probability of survival for each egg. 
+However, recall that not all individual contribute to the likelihood for egg survival. 
+In particular, we have no survival data from birds that laid zero eggs. 
+This bivariate approach allows us to combine information so that the number of eggs laid informs our estimates of survival probabilities. 
+In this way, we will be able to predict the survival probability of eggs from individuals that did not lay eggs. 
+Here is a Stan model statement, saved in the file `egg_lkj.stan`:
+
+```
+data {
+  // poisson data
+  int n;
+  int y[n];
+
+  // binomial data
+  int n_b;
+  int p_index[n_b];
+  int k[n_b];
+  int x[n_b];
+}
+
+parameters {
+  matrix[2, n] z;
+  vector[2] mu;
+  cholesky_factor_corr[2] L;
+  vector<lower=0>[2] sigma;
+}
+
+transformed parameters {
+  matrix[n, 2] alpha;
+  vector[n] log_lambda;
+  vector[n_b] logit_p;
+  alpha <- (diag_pre_multiply(sigma, L) * z)';
+  
+  for (i in 1:n) log_lambda[i] <- alpha[i, 1];
+  log_lambda <- log_lambda + mu[1];
+  
+  for (i in 1:n_b){
+    logit_p[i] <- alpha[p_index[i], 2];
+  }
+  logit_p <- logit_p + mu[2];
+}
+
+model {
+  // priors
+  mu ~ normal(0, 2);
+  sigma ~ normal(0, 2);
+  L ~ lkj_corr_cholesky(2);
+  to_vector(z) ~ normal(0, 1);
+
+  // likelihood
+  y ~ poisson_log(log_lambda);
+  x ~ binomial_logit(k, logit_p);
+}
+
+generated quantities {
+  // recover the correlation matrix
+  matrix[2, 2] Rho;
+  
+  Rho <- multiply_lower_tri_self_transpose(L);
+}
+```
+
+Again, here the idea is to not directly sample from the multivariate normal distribution, but instead to sample from a simpler distribution (univariate standard normal), and transform these values using the cholesky factor of the correlation matrix, vector of standard deviations, and vector of means to generate multivariate normal parameters. 
+It is possible to sample directly from the multivariate normal distribution, but this approach is much more computationally efficient.
+We have to generate the indexes for the survival observations, bundle the data, and then we can fit the model:
+
+```{r, results='hide'}
+p_ind <- which(d$eggs > 0)
+stan_d <- list(
+  n = nrow(d), 
+  y = d$eggs, 
+  n_b = sum(d$eggs > 0), 
+  p_index = p_ind,
+  k = d$eggs[d$eggs > 0], 
+  x = d$fledglings[d$eggs > 0]
+)
+m <- stan('egg_lkj.stan', data=stan_d, 
+          pars=c('Rho', 'alpha', 'sigma', 'mu'))
+```
+
+Let's check convergence for the hyperparameters, which usually implies convergence of the child parameters:
+
+```{r}
+print(m, pars=c('Rho', 'sigma', 'mu', 'lp__'))
+traceplot(m, pars=c('Rho', 'sigma', 'mu', 'lp__'))
+```
+
+In this example, we might proceed by adding "fixed" effects of body mass, so that we can evaluate how much of the correlation between clutch size and survival may be related to body size. 
+We leave this as an exercise, but point out that this can be accomplished using design matrices or for-loops in the Stan file. 
+
+## Varying intercepts and slopes
+
+Some of the most common applications of Bayesian hierarchical models involve intercept and slope parameters that vary among groups. 
+In these cases, it is often wise to allow the intercepts and slopes to correlate, and this is mostly accomplished via multivariate normal random effects, where one dimension corresponds to intercepts, and the other to slopes. 
+To demonstrate this, we will use a classic example from a sleep study in which the reaction times of 18 subjects was measured daily with increasing levels of sleep deprivation. 
+
+```{r}
+library(lme4)
+ggplot(sleepstudy, aes(x=Days, y=Reaction)) + 
+  geom_point() + 
+  stat_smooth(method='lm') +
+  facet_wrap(~ Subject)
+```
+
+We might envision the following model that allows the intercepts (reaction on day 0) and slope (daily change in expected reaction time) to vary among subjects, with normally distributed error, indexing subjects by $i$ and days by $t$:
+
+$$y_{it} \sim N(\mu_{it}, \sigma_y)$$
+
+$$\mu_{it} = \alpha_i + \beta_i t$$
+
+$$\begin{bmatrix} 
+\alpha_i \\
+\beta_i
+\end{bmatrix} \sim N \bigg(
+\begin{bmatrix} 
+\mu_\alpha \\
+\mu_\beta
+\end{bmatrix}, 
+\Sigma \bigg)$$
+
+We can implement this model in `lme4` if we want:
+
+```{r}
+mle <- lmer(Reaction ~ Days + (Days | Subject), data=sleepstudy)
+```
+
+Or, we could translate the model to Stan:
+
+```
+data {
+  int n;
+  vector[n] y;
+  int n_subject;
+  int n_t;
+  
+  // indices
+  int<lower=1, upper=n_subject> subject[n];
+  int<lower=1, upper=n_t> t[n];
+}
+
+parameters {
+  matrix[2, n_subject] z;
+  vector[2] mu;
+  cholesky_factor_corr[2] L;
+  vector<lower=0>[2] sigma;
+  real<lower=0> sigma_y;
+}
+
+model {
+  to_vector(z) ~ normal(0, 1);
+}
+```
+
+```{r, message=FALSE, results='hide'}
+stan_d <- list(n = nrow(sleepstudy), 
+               y = sleepstudy$Reaction, 
+               tmax = max(sleepstudy$Days), 
+               t = sleepstudy$Days, 
+               n_subject = max(as.numeric(sleepstudy$Subject)), 
+               subject = as.numeric(sleepstudy$Subject))
+m <- stan('sleep.stan', data=stan_d, 
+          pars = c('mu', 'sigma', 'sigma_y', 'alpha', 'Rho'))
+```
+
+Checking convergence:
+
+```{r}
+traceplot(m, pars = c('mu', 'sigma', 'sigma_y', 'Rho'))
+print(m, pars = c('mu', 'sigma', 'sigma_y', 'Rho'))
+```
+
+These results are not very different than those of the `lmer` implementation, but with a Bayesian implementation we immediately have the full posterior distribution for every parameter, which is a huge advantage. 
+
+## Further reading
+
+Hobbs and Hooten. 2015. *Bayesian models: a statistical primer for ecologists*. Chapter 6. 
+
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 12-15.
 
 Gelman, A., J. Hill, and M. Yajima. 2012. Why We (Usually) Don’t Have to Worry About Multiple Comparisons. Journal of Research on Educational Effectiveness 5:189–211.  
-Gelman and Hill discussion of random effects terminology (very good)
+
+Gelman, Andrew. Prior distributions for variance parameters in hierarchical models (comment on article by Browne and Draper). Bayesian Anal. 1 (2006), no. 3, 515--534.

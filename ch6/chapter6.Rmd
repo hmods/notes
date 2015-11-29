@@ -243,7 +243,7 @@ $$\tau_j \sim N(0, \sigma_\tau)$$
 
 so that the likelihood to maximize is: 
 
-$$[y_i \mid p_i] [p_i \mid p_0, \pi_i, \tau_i] [\pi_i \mid \sigma_\pi] [\tau_j \mid \sigma_\tau]$$
+$$[y\mid p] [p \mid p_0, \pi, \tau] [\pi \mid \sigma_\pi] [\tau \mid \sigma_\tau]$$
 
 Here, $p_0$ is an intercept parameter that represents the mean logit probability of making a free throw across all players and teams. 
 Player effects are represented by $\pi_i$, and team effects are represented by $\tau_{j[i]}$, with subscript indexing to represent that player $i$ belongs to team $j$.
@@ -366,6 +366,9 @@ sjp.glmer(m3, ri.nr = 1, sort = "(Intercept)")
 sjp.glmer(m3, ri.nr=2, sort = "(Intercept)")
 ```
 
+These confidence intervals should be taken with a grain of salt, as they are calculated based on a normal approximation with Wald standard errors, which assume a quadratic log-likelihood profile. 
+Later, we will get a more reliable estimate of the error for random effects using Bayesian methods. 
+
 We assumed that the random effects are normally distributed on a logit scale. 
 This assumption can be checked with a q-q plot: 
 
@@ -409,6 +412,11 @@ Which player might be best?
 ```{r}
 d[which.max(d$estimated_p), 
   c("Player", "Age", "Pos", "ft_shot","ft_pct", "estimated_p")]
+```
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+# detach arm
+detach("package:arm", unload=TRUE)
 ```
 
 ## Further reading
