@@ -256,11 +256,7 @@ In a Bayesian context, we often run multiple Markov chain simulations, where we 
 If all goes well, then eventually each Markov chain converges to the posterior distribution of the parameters, so that every draw can be considered a simulated sample from the posterior distribution. 
 Typically, we initialize the chains at different (often random) points in parameter space. 
 If all goes well, then after some number of iterations, every chain has converged to the posterior distribution, and we run the chains a bit longer to generate a representative sample from the posterior, then perform inference on our sample. 
-Here is what this looks like in a 2-d (two parameter) model of the mean situation.
-
-![](ch3/metrop.gif)
-
-Notice that the chains start dispersed in parameter space and eventually all converge to the same region and stay there. 
+Chains start dispersed in parameter space and eventually all converge to the same region and stay there. 
 After some large number of iterations, the estimated posterior density stabilizes. 
 At this point, usually the early draws from the Markov chains are discarded as "warmup" or "burnin", as these do not represent draws from the posterior, because the chains had not converged.
 

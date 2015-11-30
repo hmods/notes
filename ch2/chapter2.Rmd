@@ -111,21 +111,6 @@ ggplot(g, aes(x = mu, y = sigma)) +
 This is a contour plot of the log-likelihood surface. 
 The black lines are log-likelihood isoclines, corresponding to particular values of the log-likelihood.
 If we are lucky, there is only one global maximum on the surface (this can be assessed analytically), and we've found it. 
-If the contour plot is hard to understand, here is a 3d representation of the surface (or, at least the points that we evaluated). 
-
-```{r echo=FALSE}
-library(knitr)
-library(rgl)
-knit_hooks$set(webgl = hook_webgl)
-```
-
-```{r, message=FALSE, webgl=TRUE}
-cols <- colorRampPalette(c('purple', 'blue', 'red', 'yellow'))
-g$color <- cols(30)[as.numeric(cut(g$loglik, breaks = 30))]
-plot3d(x = g$mu, y = g$sigma, z = g$loglik, col = g$color, 
-       xlab = 'mu', ylab = 'sigma', zlab = 'loglik')
-```
-
 Here our best estimate for our parameters $\theta = (\mu, \sigma^2)$ will be the pair of paramters that has the greatest log-likelihood:
 
 ```{r}

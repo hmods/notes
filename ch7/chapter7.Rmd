@@ -655,7 +655,7 @@ These results are not very different than those of the `lmer` implementation, bu
 
 Hobbs and Hooten. 2015. *Bayesian models: a statistical primer for ecologists*. Chapter 6. 
 
-Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 12-15.
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 13.
 
 Gelman, A., J. Hill, and M. Yajima. 2012. Why We (Usually) Don’t Have to Worry About Multiple Comparisons. Journal of Research on Educational Effectiveness 5:189–211.  
 

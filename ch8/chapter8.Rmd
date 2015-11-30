@@ -1,12 +1,119 @@
 Chapter 8: Hierarchical model construction
 ===============================
 
-This is where I think we will have the greatest impact on students future work. Translating problems to models is a key skill, and it may take a fair bit of practice. Tools to implement include graphical skills (e.g. drawing DAGs), and familiarity with probability distributions.
+## Big picture
+Translating problems to models is a key skill, and it may take a fair bit of practice. 
+In this chapter we introduce tools to help with this step: parameter, process, and observation models, and a few examples that make use of familiar probability distributions.
 
+#### Learning goals
+- building models from simple submodels
 - parameter, process, and observation models
-- building complexity from simple pieces
-- translating biological problems and observations to models
-- example: what method works best for detecting a species?
-- example: error in variables models
-- more practice in developing models (don't necessarily have to implement)
+- examples:  
+-- occupancy model  
+-- N-mixture model  
+-- error in variables models
 
+## Parameter, process, and observation models
+
+One incredibly powerful perspective in model construction is the distinction between observation, process, and parameter models. 
+The observation model includes the likelihood, and relates the latent process of interest to the quantities that we have actually observed. 
+The process model is typically what we're most interested in scientifically, and typically is not fully observed. 
+The parameter model includes any hierarchical structures on parameters and priors for hyperparameters. 
+
+### Example: occupancy model
+
+In occupancy models, we make binary observations (detected, not detected) on latent binary quantities (present, not present), and we must have priors for the detection and occurrence parameters to complete a Bayesian formulation (the parameter model).
+If we visit sites $i=1, ..., n$, and conduct $j=1, ..., J$ surveys at each then we can write out these components as follows:
+
+**Observation model**
+
+Here our detection and nondetection data $y$ arise as a function of the latent occurrence state $z$ and probability of detection $p$. 
+Note that the indexing indicates that the occurrence state $z$ does not vary among surveys.
+
+$$y_{ij} \sim Bern(J, z_i p_{ij})$$
+
+**Process model**
+
+Here, the species is present $z=1$ or absent $z=0$ with some probability $\psi$. 
+
+$$z_i \sim Bern(\psi_i)$$
+
+**Parameter model**
+
+Finally, priors are specified for the occurrence and detection probabilities.
+
+$$\psi_i \sim ...$$
+
+$$p_{ij} \sim ...$$
+
+### Example: N-mixture model
+
+We are often interested in estimating and explaining population sizes in wild organisms, and mark-recapture methods are not always feasible. 
+Suppose we visit site $i$ multiple times $j=1, ..., J$, and on each visit we conduct a survey, recording the number of individuals observed.
+If we can assume that across visits, the true abundance $N_i$ is unchanged, and that the detection of each individual is imperfect but independent, then we might construct an N-mixture model to estimate abundance. 
+
+**Observation model**
+
+We observe a subset of the individuals at the site, and each individual is detected with probability $p_i$:
+
+$$y_{ij} \sim Binom(N_i, p_i)$$
+
+Notice that both parameters of the binomial observation model are unknown. 
+True abundance $N_i$ is a latent quantity.
+
+**Process model**
+
+We need some discrete probability distribution for $N$, such as the Poisson or negative binomial. 
+
+$$N_i \sim Pois(\lambda_i)$$
+
+**Parameter model**
+
+Finally, we need priors for $p$ and $\lambda$.
+
+$$p \sim ...$$
+
+$$\lambda \sim ...$$
+
+We note that this model has integer parameters, and as such cannot be fitted (presently) with Stan, but this is easy to implement in JAGS. 
+
+### Example: error in variables models
+
+Most of the time in ecology, covariates are observed with error and subsequently assumed to be known exactly. 
+This causes bias in slope estimates, and despite the fact that this has been known for over a century, most people carry on assuming that the covariate is fixed. 
+
+For what follows, we'll assume a simple linear regression, in which continuous covariates are measured with error. 
+But, this approach can be applied to any of the models that we've covered in this class.
+
+True covariate values are considered latent variables, with repeated measurements of covariate values $x_{i=1}, ..., x_{i=n}$ arising from a normal distribution with a mean equal to the true value, and some measurement error $\sigma_x$.
+Again, this is a special case, but in principle the covariate could have other distributions (e.g., you're interested in the effect of sex (M or F), but this is measured imperfectly).
+
+**Observation model**
+
+We assume that for sample unit $i$ and repeat measurement $j$:
+
+$$ x^{obs}_{ij} \sim Normal(x_i, \sigma_x) $$
+
+$$ y \sim Normal(\mu_y, \sigma_y) $$
+
+The trick here is to use repeated measurements of the covariates to estimate and correct for measurement error.
+In order for this to be valid, the true covariate values cannot vary across repeat measurements.
+If the covariate was individual weight, you would have to ensure that the true weight did not vary across repeat measurements (for me, frogs urinating during handling would violate this assumption).
+
+**Process model**
+
+This is what we're typically interested in: how the expected value of $y$ varies with $x$. 
+In this case, $x$ is a parameter (it will require a prior).
+
+$$\mu_y = \alpha + \beta x_i$$
+
+**Parameter model**
+
+In the parameter model, we would specify priors for $x$, $\alpha$, $\beta$, and the variance parameters. 
+More on this example can be found [here](http://mbjoseph.github.io/2013/11/27/measure.html). 
+
+## Further reading
+
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 14 & 15.
+
+Royle JA. N-mixture models for estimating population size from spatially replicated counts. Biometrics 60. 
