@@ -5,4 +5,6 @@ Course notes for hierarchical modeling class, compiled via
 rmarkdown::render('main.Rmd')
 ```
 
-A rendered online version should be viewable [here](http://htmlpreview.github.io/?https://raw.githubusercontent.com/mbjoseph/notes/master/main.html?token=ACiodE723vqN5PHGooGRvCL04-VrR7ptks5WVAvYwA%3D%3D).
+This should create `main.pdf`, which is the primary document. 
+
+This is a work in progress, but issues and pull requests are welcome!
