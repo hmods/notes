@@ -81,7 +81,7 @@ Returning to our simplest normal model (the model of the mean), we have two para
 As an aside, maximizing the likelihood is equivalent to minimizing the sum of squared error with the normal distribution. 
 Below, we simulate a small dataset with known parameters, and then use a direct search over a bivariate grid of parameters ($\mu$ and $\sigma$). 
 
-```{r, message=FALSE}
+```{r, message=FALSE, fig.cap="Contour plot for the log-likelihood surface across a 2d grid of parameter space."}
 # set parameters
 mu <- 6
 sigma <- 3
@@ -161,7 +161,7 @@ rbind(unlist(MLE_dsearch[c('mu', 'sigma')]),
 
 This approach is quite general, and can be modified to be used for instance in a linear regression context: 
 
-```{r}
+```{r, fig.cap="Raw data and line of best fit from a linear regression that used `optim` to find the maximum likelihood estimates."}
 n <- 20
 x <- runif(n)
 y <- rnorm(n, 3 + 10 * x, sd = 1)

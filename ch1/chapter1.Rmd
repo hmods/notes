@@ -1,3 +1,6 @@
+---
+output: pdf_document
+---
 Chapter 1: Linear models
 ========================
 
@@ -7,17 +10,6 @@ This course builds on an understanding of the mechanics of linear models.
 Here we introduce some key topics that will facilitate future understanding hierarchical models.
 
 #### Learning goals
-
-<!---
-I haven't added anything about interaction effects or centering covariates yet. 
-Maybe this would fit well in the general linear model section?
-Centering covariates might also be good in the linear regression section. 
-Or, maybe it's worth deferring to Gelman and Hill on centering and streamlining the notes?
-I also was not sure what we were thinking about varying structure and standard errors. 
-Did you have something in mind here?
-I have avoided talking much about standard errors yet because it's a fairly 
-frequentist notion (sd of the sampling distribution)
--->
 
 - linear regression with `lm`
 - intercepts, "categorical" effects
@@ -190,7 +182,7 @@ For any given value of the intercept, there are only certain values of the slope
 To assess this possibility, we might also be interested in the bivariate confidence ellipse for these two parameters. 
 We can evaluate this quantity graphically as follows with some help from the `car` package:
 
-```{r, fig.caption="The bivariate confidence region for the slope and intercept. Correlation implies that for any particular value of alpha or beta, only a small subset of the values of the other parameter are supported. This information is not available by considering the univariate confidence intervals alone."}
+```{r, fig.cap="The bivariate confidence region for the slope and intercept. Correlation implies that for any particular value of alpha or beta, only a small subset of the values of the other parameter are supported. This information is not available by considering the univariate confidence intervals alone."}
 library(car)
 confidenceEllipse(m)
 ```
@@ -199,7 +191,7 @@ This is not great.
 We want to be able to directly use the univariate confidence intervals. 
 Our problem can be solved by centering $x$:
 
-```{r, echo=FALSE, fig.height=5, fig.width=9}
+```{r, echo=FALSE, fig.height=5, fig.width=9, fig.cap="New line of best fit with confidence ellipses for the slope and intercept after centering the covariate $x$"}
 par(mfrow=c(1, 2))
 x <- x - mean(x)
 m <- lm(y ~ x)
@@ -269,7 +261,7 @@ The following example illustrates some data simulation, visualization, and param
 Specifically, we assess 60 humans for their taste response to three flavors of iced cream. 
 We want to extrapolate from our sample to the broader population of all ice cream eating humans to learn whether in general people think ice cream tastiness varies as a function of flavor. 
 
-```{r}
+```{r, fig.cap="Simulated data on tastiness across three groups. Each point is an observation"}
 # simulate and visualize data
 n <- 60
 x <- rep(c("chocolate", "strawberry", "vanilla"), length.out = n)
@@ -318,7 +310,7 @@ Our assumptions in this simple one way ANOVA context are identical to our assump
 Specifically, we assumed that our errors are independently and identically distributed, and that the variance is constant for each group (homoskedasticity). 
 The built in `plot` method for `lm` objects is designed to return diagnostic plots that help to check these assumptions. 
 
-```{r}
+```{r, fig.cap="Default diagnostic plots for `lm` objects."}
 par(mfrow=c(2, 2))
 plot(m)
 ```
@@ -376,7 +368,7 @@ summary(m)
 
 Visualizing these models is tricky, because we are in 3d space (with dimensions $x_1$, $x_2$, and $y$), but contour plots can be effective and leverage peoples' understanding of topographic maps. 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, fig.cap='Contour plot of the linear predictor. Lines represent E(y) isoclines, where the expected value of y is unchanged.'}
 # visualizing the results in terms of the linear predictor
 lo <- 40
 x1seq <- seq(min(x1), max(x1), length.out = lo)
@@ -392,7 +384,7 @@ ggplot(g, aes(x=x1, y=x2)) +
 
 Alternatively, you might check out the `effects` package:
 
-```{r, message=FALSE}
+```{r, message=FALSE, fig.cap="Default effects plot from the `effects` package."}
 library(effects)
 plot(allEffects(m))
 ```
@@ -402,7 +394,7 @@ plot(allEffects(m))
 Here we demonstrate interaction between two categorical covariates, using the `diamonds` dataset which is in the `ggplot2` package.t
 We are interested in the relationship between diamond price, cut quality, and color.
 
-```{r}
+```{r, fig.cap="Stripchart of tooth growth across combinations of dose and supplements."}
 str(ToothGrowth)
 ToothGrowth$dose <- factor(ToothGrowth$dose)
 ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) + 
@@ -463,7 +455,7 @@ AIC can be considered to be similar to cross validation, approximating the abili
 
 Being somewhat lazy, we might again choose to plot the results of this model using the `effects` package. 
 
-```{r}
+```{r, fig.cap="Default effects plot from the `effects` package."}
 plot(allEffects(m))
 ```
 
@@ -474,7 +466,7 @@ But, evaluating the crappiness of the model is difficult when there are no data 
 Ideally, the data can be shown along with the estimated group means and some indication of uncertainty. 
 If we weren't quite so lazy, we could use the `predict` function to obtain confidence intervals for the means of each group. 
 
-```{r}
+```{r, fig.cap="Raw data along with confidence intervals for the means of each group. Notice how much mor information is shown here compared to a bar chart with error bars."}
 # construct a new data frame for predictions
 g <- expand.grid(supp = levels(ToothGrowth$supp), 
                  dose = levels(ToothGrowth$dose))
@@ -500,7 +492,7 @@ Although "dynamite" plots are common, we shall not include one here and we stron
 Sometimes, we're interested in interactions between continuous or numeric covariates and another covariates with discrete categorical levels. 
 Again, this falls under the broad class of models used in analysis of covariance (ANCOVA). 
 
-```{r}
+```{r, fig.cap="Simulated interaction between a continuous and categorical covariate."}
 x1 <- rnorm(n)
 x2 <- factor(sample(c('A', 'B'), n, replace=TRUE))
 
@@ -532,7 +524,7 @@ summary(m)
 
 Let's plot the lines of best fit along with the data. 
 
-```{r}
+```{r, fig.cap="Lines of best fit from the ANCOVA model, along with the raw data."}
 plot(x1, y, col=x2, pch=19)
 legend('topright', col=1:2, legend=c('Group A', 'Group B'), pch=19)
 abline(coef(m)[1], coef(m)[2])

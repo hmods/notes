@@ -114,7 +114,7 @@ Where $c$ is a constant that ensures that $[p \mid \alpha, \beta]$ integrates to
 That's a factorial symbol ($!$), not a punctuation mark!
 To give a bit of intuition for what the beta distribution looks like, here are some plots of the beta density with different values of $\alpha$ and $\beta$:
 
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=6, fig.cap="A collection of beta priors with varying parameters."}
 alpha <- rep(c(1, 5, 10))
 beta <- rep(c(1, 5, 10))
 g <- expand.grid(alpha=alpha, beta=beta)
@@ -165,7 +165,7 @@ Now we can explore the effect of our prior distributions on the posterior.
 Suppose that we have observed $n=8$ data points, $y_1, y_2, ..., y_{10}$, with $y_i \in \{0, 1\}$ and 2 successes, $\sum_i y_i = 2$. 
 Let's graph the posterior distributions that are implied by the priors plotted above and the likelihood resulting from these observations.
 
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=6, fig.cap="The same prior distributions as before, but now with the liklihood and posterior distributions. The prior is shown in grey, the likelihood is shown in red, and the posterior distribution is shown in blue."}
 g$alpha_post <- g$alpha + 2
 g$beta_post <- g$beta + 6
   
@@ -181,14 +181,13 @@ for (i in 1:nrow(g)){
 }
 ```
 
-Here the prior is shown in grey, the likelihood is shown in red, and the posterior distribution is shown in blue.
 Notice how strong priors pull the posterior distribution toward them, and weak priors result in posteriors that are mostly affected by the data. 
 The majority of Bayesian statisticians nowadays advocate for the inclusion of reasonable prior distributions rather than prior distributions that feign ignorance. 
 One nice feature of Bayesian approaches is that, given enough data, the prior tends to have less of an influence on the posterior. 
 This is consistent with the notion that when reasonable people are presented with strong evidence, they tend to more or less agree even if they may have disagreed ahead of time (though at times the empirical evidence for this phenomenon may seem somewhat equivocal).
 To show this, let's increase the amount of information in our data, so that we have $n=800$ and $\sum y = 200$ successes. 
 
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=6, fig.cap="Updated example with same parameters but larger sample sizes. Here again the prior is shown in grey, the likelihood is shown in red, and the posterior distribution is shown in blue. The posterior distribution has essentially the same shape as the likelihood because we have much more information in this larger data set relative to our priors."}
 g$alpha_post <- g$alpha + 200
 g$beta_post <- g$beta + 600
   
@@ -203,9 +202,6 @@ for (i in 1:nrow(g)){
   title(bquote(alpha == .(g$alpha[i]) ~ ", " ~ beta == .(g$beta[i])))
 }
 ```
-
-Here again the prior is shown in grey, the likelihood is shown in red, and the posterior distribution is shown in blue.
-The posterior distribution has essentially the same shape as the likelihood because we have much more information in this larger data set relative to our priors. 
 
 ### Improper priors
 
@@ -265,7 +261,7 @@ Some of these are graphical.
 Traceplots show the parameter values that a Markov chain has taken on the y-axis, and iteration number on the x-axis. 
 For instance, if we run our Stan model from before:
 
-```{r, message=FALSE}
+```{r, message=FALSE, fig.cap="Traceplots that show the sequence of parameter values taken in the Markov chains."}
 library(rstan)
 m <- '
 data {
@@ -318,7 +314,7 @@ $$\sigma \sim halfNormal(0, 5)$$,
 
 where the half-Normal with mean zero is a folded Gaussian probability density function with only positive mass:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.cap="Half-normal prior distribution with mean 0 and standard deviation 5."}
 par(mfrow=c(1, 1))
 x <- seq(0, 20, .01)
 plot(x, 2 * dnorm(x, 0, 5), type='l', 
@@ -327,7 +323,7 @@ plot(x, 2 * dnorm(x, 0, 5), type='l',
 
 Let's do a quick linear regression model and summarize/plot the results.
 
-```{r}
+```{r, fig.cap="Plot of simulated linear regression data."}
 n <- 20
 x <- runif(n, 0, 3)
 y <- rnorm(n, -3 + .75 * x, 1)
@@ -370,9 +366,15 @@ out <- stan('lm.stan', data = stan_d)
 
 There are also some other default plots which are nice:
 
-```{r}
+```{r, fig.cap="Traceplot of Markov chains."}
 traceplot(out)
+```
+
+```{r, fig.cap="Default plot output for `stanfit` objects."}
 plot(out)
+```
+
+```{r, fig.cap="A pairs plot for `stanfit` objects, useful for detecting correlated posterior distributions. "}
 pairs(out)
 ```
 
@@ -387,7 +389,7 @@ out
 
 And finally, let's extract our samples from the posterior and plot our estimated line of best fit. 
 
-```{r}
+```{r, fig.cap="Raw data along with the posterior distribution of regression lines. Each draw from the posterior is shown as a line. Collectively, these lines represent the most probable regression lines conditional on the data."}
 library(scales)
 post <- extract(out)
 
@@ -409,14 +411,14 @@ If we have abandoned frequentism, then how might we think about this?
 One way **not** to think of it is asking what the probability is that the slope is exactly equal to zero. 
 If we think of a posterior probability density of our slope, then the true probability of any one particular value is zero because this is a probability density function, not a probability mass function (this is true for $\beta=0$ and for $\beta = .0112351351$, for instance). 
 
-```{r}
+```{r, fig.cap="Density plot of the posterior distribution of the slope."}
 plot(density(post$beta[, 2]))
 ```
 
 A better question (answerable with a probability density function) might be: given the data, what is the probability that $x$ has a positive effect on $y$?
 This is equivalent to asking about the area to the right of zero in the posterior distribution of $\beta$, and the number is approximated simply the proportion of posterior draws greater than zero. 
 
-```{r}
+```{r, fig.cap="Sorted posterior draws for the estimated slope. These plots are useful for visually inspecting distributions."}
 mean(post$beta[, 2] > 0)
 ord <- order(post$beta[, 2])
 plot(post$beta[ord, 2], 

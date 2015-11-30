@@ -112,6 +112,31 @@ $$\mu_y = \alpha + \beta x_i$$
 In the parameter model, we would specify priors for $x$, $\alpha$, $\beta$, and the variance parameters. 
 More on this example can be found [here](http://mbjoseph.github.io/2013/11/27/measure.html). 
 
+## General strategies for model building
+
+### Verify your model
+
+It is always a good idea to verify your model, meaning to ensure that the estimation procedure is reliable. 
+One way to do this is with simulated data. 
+In particular, simulating data from a known generative model, and then trying to recover the parameters can give you insights into a) whether your model even works, b) the behavior of the MCMC algorithm, and c) the frequentist properties of your estimate (long-run interval coverage, bias). 
+In addition, this procedure gives you piece of mind. 
+It is also often useful to investigate the implications of and sensitivity to model misspecification in this context, where there are known differences between the generative model and the statistical model.
+In my experience this excercise nearly always proves to be incredibly useful.
+
+### Start simple
+
+Too often, people charge forward and build incredibly elaborate hierarchical Bayesian models, only to find that they don't work in some way (either they don't converge, recover parameters, take too long, etc.). 
+Instead, start with simple models. 
+Add complexity incrementally. 
+That way, when something breaks, you will be more likely to know what model component is causing the problem. 
+This also helps to clarify thinking about what complexity can be safely ignored, and what must be included in the model. 
+
+### Stay simple
+
+It's easy to build incredibly complex models, but simple models are sometimes more powerful. 
+Also, simple models are more likely to be broadly applicable to other systems, whereas an incredibly complicated model might only apply to your system. 
+In papers, simple models are much easier to explain as well.
+
 ## Further reading
 
 Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 14 & 15.

@@ -73,7 +73,7 @@ confint(m)
 
 Plotting the line of best fit with the data: 
 
-```{r}
+```{r, fig.cap="Line of best fit from the Poisson glm along with the raw data."}
 plot(x, y)
 
 xnew <- seq(min(x), max(x), length.out = 100)
@@ -114,16 +114,22 @@ out <- stan('poisson_glm.stan', data = stan_d)
 
 As always, it behooves us evaluate convergence and see whether there may be issues with the MCMC algorithm. 
 
-```{r}
+```{r, fig.cap="Traceplot of Markov chains for the Poisson glm."}
 out
 traceplot(out)
+```
+
+```{r, fig.cap="Default `stanfit` plot output for the Poisson glm."}
 plot(out)
+```
+
+```{r, fig.cap="A pairs plot for the posterior of the Poisson glm."}
 pairs(out)
 ```
 
 Let's plot the lines of best fit from the posterior distribution:
 
-```{r}
+```{r, fig.cap="Raw data along with lines of best fit for the Poisson glm."}
 library(scales)
 post <- extract(out)
 plot(x, y)
@@ -157,7 +163,7 @@ One general strategy that falls under the class of model diagnostics known as **
 
 In this case, it is reasonable to choose the variance of $y$ as the test statistic. 
 
-```{r}
+```{r, fig.cap="Histogram of simulated variances from the posterior predictive distribution along with the observed variance, comprising a posterior predictive check for the variance of $y$."}
 # simulate new observations and store variances
 y_new <- array(dim=c(n_iter, n))
 var_new <- rep(NA, n_iter)
@@ -178,7 +184,7 @@ Here's a real world application with overdispersion.
 The `vegan` package has a dataset of the number of trees in a bunch of 1-hectare plots on Barro Colorado Island. 
 Let's look at the mean and variance of each species to get a sense for how often Poisson distribution might work:
 
-```{r, message=FALSE}
+```{r, message=FALSE, fig.cap="Sample mean and variances for abundance on Barro Colorado Island, with each point representing a different species."}
 library(vegan)
 library(dplyr)
 data(BCI)
@@ -203,13 +209,12 @@ Darn.
 Looks like the variance exceeds the mean for most of these species. 
 Let's put together a simple model for the abundance of the species *Trichilia pallida*, where we seek to estimate the mean density for the island based on the sampled plots. 
 
-```{r, message=FALSE, warnings=FALSE, results='hide'}
+```{r, message=FALSE, warnings=FALSE, results='hide', fig.cap="Sorted abundance values for *Trichilia pallida*, with each point representing the abundance of the species in a sample plot."}
 # subset data
 species_d <- subset(d, ind == 'Trichilia.pallida')
 
 # visualize abundance data
-hist(species_d$values)
-plot(sort(species_d$values))
+plot(sort(species_d$values), ylab="Sorted abundance")
 
 # collect data for estimation
 stan_d <- list(n = nrow(species_d), p = 1, 
@@ -220,15 +225,14 @@ out <- stan('poisson_glm.stan', data = stan_d)
 
 Assessing convergence: 
 
-```{r}
+```{r, fig.cap="Traceplot of the Markov chain for the single species Poisson glm."}
 out
 traceplot(out)
-plot(out)
 ```
 
 Using a posterior predictive check for the variance of $y$:
 
-```{r}
+```{r, fig.cap="Posterior predictive check for the variance of plot abundance from the single species Poisson glm."}
 post <- extract(out)
 
 # simulate new observations and store variances
@@ -295,14 +299,14 @@ Our data haven't changed, but we do need to specify the path to this updated mod
 od_out <- stan('poisson_od.stan', data = stan_d)
 ```
 
-```{r}
+```{r, fig.cap="Traceplot of the Markov chain for the overdispersed Poisson model."}
 print(od_out, pars=c('sigma', 'beta', 'lp__'))
 traceplot(od_out, pars=c('sigma', 'beta'))
 ```
 
 Using an updated posterior predictive check for the variance of $y$:
 
-```{r}
+```{r, fig.cap="Updated posterior predictive check for the variance of $y$ with the overdispersed Poisson model."}
 post <- extract(od_out)
 
 # simulate new observations and store variances
@@ -326,13 +330,13 @@ The variance that we get from our replicated simulations is entirely consistent 
 
 The negative binomial distribution can be thought of as a Poisson distribution with a gamma prior on $\lambda$. 
 
-$$y \sim Poisson(\lambda)$$
+$$y_i \sim Poisson(\lambda_i)$$
 
-$$\lambda \sim Gamma(\alpha, \beta)$$
+$$\lambda_i \sim Gamma(\alpha, \beta)$$
 
 To give a sense of what this looks like, here are some gamma distributions with varying parameters:
 
-```{r}
+```{r, fig.cap="Probability densities of Gamma distributions with different parameters."}
 alpha <- c(.1, 1, 10)
 beta <- c(.1, 1, 10)
 g <- expand.grid(alpha = alpha, beta = beta)
@@ -378,14 +382,14 @@ With this `nb_glm.stan` file in hand, we can fit the model as before:
 nb_out <- stan('nb_glm.stan', data = stan_d)
 ```
 
-```{r}
+```{r, fig.cap="Traceplot of the Markov chains for the negative binomial model. "}
 nb_out
 traceplot(nb_out)
 ```
 
 Conducting our posterior predictive check:
 
-```{r}
+```{r, fig.cap="Posterior predictive check for the variance in $y$ with the negative binomial likelihood."}
 post <- extract(nb_out)
 
 # simulate new observations and store variances

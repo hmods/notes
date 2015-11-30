@@ -50,9 +50,9 @@ This is a complicated model that arises from fairly simple parts.
 We haven't yet specified the form of our prior distribution for $\lambda$ and $p$. 
 The simplest prior might be something that assumes that all individuals $i=1, ..., n$ have the same values. 
 For instance, suppose that we expected ahead of time that each bird would lay up to 7 eggs, with an expected value of about 2.5. 
-We might then choose a lognormal prior for $\lambda$, with mean 1 and standard deviation .5:
+We might then choose a gamma prior for $\lambda$ that is consistent with these expectations:
 
-```{r}
+```{r, fig.cap="Probability density of the Gamma prior on lambda."}
 x <- seq(0, 20, .01)
 dx <- dgamma(x, 2.5, scale=1.1)
 plot(x, dx, type='l', 
@@ -65,7 +65,7 @@ qgamma(.975, 2.5, scale=1.1)
 
 If we thought that mean survival probability was about .375, but as low as zero and as high as .8, we could choose a beta prior for $p$
 
-```{r}
+```{r, fig.cap="Probability density of the beta prior on p."}
 x <- seq(0, 1, .01)
 dx <- dbeta(x, 3, 5)
 plot(x, dx, type='l', xlab='p', ylab='[p]')
@@ -86,7 +86,7 @@ $$p \sim beta(3, 5)$$
 Suppose we have data from 100 females, and we'd like to update our priors given this new information. 
 First, visualizing the data a bit:
 
-```{r, message=FALSE}
+```{r, message=FALSE, fig.cap="Empirical distribution of number of eggs laid by each bird."}
 library(dplyr)
 library(ggplot2)
 d <- read.csv('eggs.csv')
@@ -98,7 +98,10 @@ tbl_df(d)
 
 ggplot(d, aes(x=eggs)) + 
   geom_histogram()
+```
 
+
+```{r, fig.cap="Empirical distribution of the proportion of eggs surviving to fledging for each bird."}
 ggplot(d, aes(x=p_survive)) + 
   geom_histogram()
 ```
@@ -151,7 +154,7 @@ library(rstan)
 m <- stan('eggs.stan', data=stan_d)
 ```
 
-```{r}
+```{r, fig.cap="Traceplot of the Markov chains for the `egg.stan` model."}
 m
 traceplot(m)
 ```
@@ -231,7 +234,7 @@ m <- stan('egg_ranef.stan', data=stan_d,
           pars=c('mu_lambda', 'mu_p', 'sigma_lambda', 'sigma_p', 'lp__'))
 ```
 
-```{r}
+```{r, fig.cap="Traceplot of the Markov chains for the `egg_ranef.stan` model, which introduces hyperparameters to account for among-individual variation."}
 traceplot(m)
 m
 ```
@@ -297,7 +300,7 @@ Fitting our new model:
 m <- stan('egg_ncp.stan', data=stan_d)
 ```
 
-```{r}
+```{r, fig.cap="Traceplot from the `egg_ncp.stan` model, which uses a non-centered parameterization for the univariate random effects."}
 traceplot(m, pars=c('mu_lambda', 'mu_p', 'sigma_lambda', 'sigma_p', 'lp__'))
 print(m, pars=c('mu_lambda', 'mu_p', 'sigma_lambda', 'sigma_p', 'lp__'))
 ```
@@ -305,17 +308,18 @@ print(m, pars=c('mu_lambda', 'mu_p', 'sigma_lambda', 'sigma_p', 'lp__'))
 We might be interested in whether there is any correlation between egg output and egg survival. 
 To explore this, we can plot the random effects on the link scale:
 
-```{r}
+```{r, fig.cap="Plot of the posterior medians for the expected number of eggs laid and probability of egg survival for birds that laid eggs."}
 post <- extract(m)
 ll_meds <- apply(post$log_lambda, 2, median)
 lp_meds <- apply(post$logit_p, 2, median)
-plot(exp(ll_meds[d$eggs > 0]), plogis(lp_meds))
+plot(exp(ll_meds[d$eggs > 0]), plogis(lp_meds), 
+     xlab=expression(lambda[i]), ylab=expression(p[i]))
 ```
 
 That plot is not so informative, but if we are interested in the correlation, we can simply calculate the correlation for each draw to get the posterior distribution for the correlation. 
 This is one of the huge advantages of Bayesian inference: we can calculate the posterior distribution for any derived parameters using posterior draws. 
 
-```{r}
+```{r, fig.cap="Histogram of the posterior distribution for the correlation between the log expeted number of chicks laid and the logit probability of egg survival."}
 n_iter <- length(post$lp__)
 cor_post <- rep(NA, n_iter)
 for (i in 1:n_iter){
@@ -372,7 +376,7 @@ $\boldsymbol{\Sigma} = \begin{bmatrix}
 
 We can visualize the density of this bivariate normal as with a heatmap: 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.cap="Bivariate normal density heatmap."}
 # adapted from http://www.pitt.edu/~njc23/Lecture5.pdf 
 dmvnorm <- function(x, mu, Sigma) {
   exp(-.5 * t(x-mu) %*% solve(Sigma) %*% (x - mu)) / sqrt(2 * pi * det(Sigma))
@@ -412,7 +416,7 @@ The LKJ correlation distribution has one parameter that specifies how concentrat
 An LKJ correlation with $\eta=2$ implies a prior in which correlations are somewhat concentrated on zero. 
 Below are the LKJ prior correlations implied by different values of $\eta$.
 
-```{r, echo=FALSE, message=FALSE, results='hide'}
+```{r, echo=FALSE, message=FALSE, results='hide', fig.cap="LKJ priors for correlation parameters with varying values of eta."}
 library(rstan)
 n <- 2
 
@@ -560,7 +564,7 @@ m <- stan('egg_lkj.stan', data=stan_d,
 
 Let's check convergence for the hyperparameters, which usually implies convergence of the child parameters:
 
-```{r}
+```{r, fig.cap="Traceplot of the Markov chains for the multivariate normal noncentered model."}
 print(m, pars=c('Rho', 'sigma', 'mu', 'lp__'))
 traceplot(m, pars=c('Rho', 'sigma', 'mu', 'lp__'))
 ```
@@ -574,7 +578,7 @@ Some of the most common applications of Bayesian hierarchical models involve int
 In these cases, it is often wise to allow the intercepts and slopes to correlate, and this is mostly accomplished via multivariate normal random effects, where one dimension corresponds to intercepts, and the other to slopes. 
 To demonstrate this, we will use a classic example from a sleep study in which the reaction times of 18 subjects was measured daily with increasing levels of sleep deprivation. 
 
-```{r}
+```{r, fig.cap="Results from the sleep study experiment. Each panel is a different patient."}
 library(lme4)
 ggplot(sleepstudy, aes(x=Days, y=Reaction)) + 
   geom_point() + 
@@ -644,7 +648,7 @@ m <- stan('sleep.stan', data=stan_d,
 
 Checking convergence:
 
-```{r}
+```{r, fig.cap="Traceplot for the Markov chains from the sleep study example, which uses multivariate normal random effects to allow for correlation between the intercepts and slopes."}
 traceplot(m, pars = c('mu', 'sigma', 'sigma_y', 'Rho'))
 print(m, pars = c('mu', 'sigma', 'sigma_y', 'Rho'))
 ```
@@ -659,4 +663,4 @@ Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchic
 
 Gelman, A., J. Hill, and M. Yajima. 2012. Why We (Usually) Don’t Have to Worry About Multiple Comparisons. Journal of Research on Educational Effectiveness 5:189–211.  
 
-Gelman, Andrew. Prior distributions for variance parameters in hierarchical models (comment on article by Browne and Draper). Bayesian Anal. 1 (2006), no. 3, 515--534.
+Gelman, Andrew. Prior distributions for variance parameters in hierarchical models (comment on article by Browne and Draper). Bayesian Analysis. 1 (2006), no. 3, 515--534.

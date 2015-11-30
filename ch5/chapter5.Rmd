@@ -40,7 +40,7 @@ Imagine that we're interested in whether different egg companies are more or les
 We know $k=12$ for each carton, and we want to know $p_1, ..., p_4$, the probability of broken eggs for the 4 companies.
 This is analogous to ANOVA, but with a binomial response. 
 
-```{r}
+```{r, fig.cap="Boxplots for the number of eggs broken in dozen egg cartons across different companies."}
 m <- 4
 n_each <- 20
 company <- rep(LETTERS[1:m], each = n_each)
@@ -118,18 +118,20 @@ out <- stan('binomial_glm.stan', data = stan_d)
 ```
 
 
-```{r}
+```{r, fig.cap="Traceplots for the Markov chains from the simple binomial glm."}
 out
 traceplot(out)
+```
+
+```{r, fig.cap="Default plot output for the binomial glm."}
 plot(out)
-pairs(out)
 ```
 
 How might we graph the results? 
 Ideally our plot should show the data and our model output (in this case, the expected number of broken eggs). 
 In this case, we might try something like this:
 
-```{r, message=FALSE}
+```{r, message=FALSE, fig.cap="Raw data along with posterior HDIs for the probability of an egg being broken across the different companies."}
 # put data into a data frame
 d <- data.frame(broken, company)
 
@@ -271,9 +273,12 @@ out <- stan('occupancy.stan', data = stan_d)
 
 How did we do? 
 
-```{r}
+```{r, fig.cap="Traceplot of the Markov chains from the occupancy model."}
 out
 traceplot(out)
+```
+
+```{r, fig.cap="Posterior densities for occupancy and detection probabilities along with their known true values."}
 par(mfrow=c(1, 2))
 post <- extract(out)
 plot(density(post$psi), main=expression(psi))
