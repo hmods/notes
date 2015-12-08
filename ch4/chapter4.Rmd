@@ -285,11 +285,11 @@ parameters {
 model {
   // priors
   beta ~ normal(0, 3);
-  sigma ~ cauchy(0, 2);
+  sigma ~ normal(0, 2);
   epsilon ~ normal(0, sigma);
-  
+
   // likelihood
-  y ~ poisson_log(X * beta);
+  y ~ poisson_log(X * beta + epsilon);
 }
 ```
 
