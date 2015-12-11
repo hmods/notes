@@ -70,7 +70,7 @@ $$y_i \sim N(\mu_i, \sigma^2)$$
 $$\mu_i = \alpha + \beta x_i$$
 
 Here, subscripts indicate which particular value of $y$ and $x$ we're talking about. 
-Specifically, we observe $n$ pairs of values: $(y_i, x_i), ..., (y_n, x_n)$, with all $x$ values known exactly.
+Specifically, we observe $n$ pairs of values: $(x_i, y_i), ..., (x_n, y_n)$, with all $x$ values known exactly. 
 Linear regression models can equivalently be written as follows:
 
 $$y_i = \alpha + \beta x_i + \epsilon_i$$
@@ -170,7 +170,7 @@ lines(px, py$fit[, 'upr'], lty=2, col='blue')
 ```
 
 So, we expect that in this case, the estimates for the intercept and slope must be negatively correlated.
-This is bourne out in the confidence region for our estimates of $\alpha$ and $\beta$. 
+This is borne out in the confidence region for our estimates of $\alpha$ and $\beta$. 
 Usually, people inspect univariate confidence intervals for parameters, e.g.,
 
 ```{r}
@@ -258,7 +258,7 @@ where $\mu_0$ is the "intercept" or mean of the reference group, and $\beta_j$ r
 Traditionally this model is called simple one-way analysis of variance, but we view it simply as another special case of a linear model.
 
 The following example illustrates some data simulation, visualization, and parameter estimation in this context. 
-Specifically, we assess 60 humans for their taste response to three flavors of iced cream. 
+Specifically, we assess 60 humans for their taste response to three flavors of ice cream. 
 We want to extrapolate from our sample to the broader population of all ice cream eating humans to learn whether in general people think ice cream tastiness varies as a function of flavor. 
 
 ```{r, fig.cap="Simulated data on tastiness across three groups. Each point is an observation"}
@@ -281,7 +281,7 @@ ggplot(data.frame(x, y), aes(x, y)) +
 
 We can estimate our parameters with the `lm` function (this should be a strong hint that there are not huge differences between linear regression and ANOVA). 
 The syntax is exactly the same as with linear regression. 
-The only difference is that our input `x` is not numeric, it's a character vector. 
+The only difference is that our input `x` is not numeric, but a character vector. 
 
 ```{r}
 m <- lm(y ~ x)
@@ -323,7 +323,7 @@ $$y \stackrel{iid}{\sim} N(X \beta, \sigma^2)$$
 
 Where $y$ is a vector consisting of $n$ observations, $X$ is a "design" matrix with $n$ rows and $p$ columns, and $\beta$ is a vector of $p$ parameters. 
 There are multivariate general linear models (e.g., MANOVA) where the response variable is a matrix and a covariance matrix is used in place of a scalar variance parameter, but we'll stick to univariate models for simplicity.
-The key point here is that the producct of $X$ and $\beta$ provides the mean of the normal distribution from which $y$ is drawn. 
+The key point here is that the product of $X$ and $\beta$ provides the mean of the normal distribution from which $y$ is drawn. 
 From this perspective, the difference between the model of the mean, linear regression, ANOVA, etc., lies in the structure of $X$ and subsequent interpretation of the parameters $\beta$. 
 This is a very powerful idea that unites many superficially disparate approaches. 
 It also is the reason that these models are considered "linear", even though a regression line might by quite non-linear (e.g., polynomial regression). 
@@ -345,7 +345,7 @@ Often, the effect of one covariate depends on the value of another covariate.
 This is referred to as "interaction" between the covariates. 
 Interactions can exist between two or more continuous and/or nominal covariates. 
 These situations have special names in the classical statistics literature. 
-For example, models with interactions between nominal covariates fall under "factorial ANOVA", those with interactions between a continuous and a nominal covariate are referred to as "analysis of covariance (ANCOVA)". 
+For example, models with interactions between nominal covariates fall under "factorial ANOVA", while those with interactions between a continuous and a nominal covariate are referred to as "analysis of covariance (ANCOVA)". 
 Here we prefer to consider these all as special cases of general linear models. 
 
 ### Interactions between two continuous covariates
@@ -391,7 +391,7 @@ plot(allEffects(m))
 
 ### Interactions between two categorical covariates
 
-Here we demonstrate interaction between two categorical covariates, using the `diamonds` dataset which is in the `ggplot2` package.t
+Here we demonstrate interaction between two categorical covariates, using the `diamonds` dataset which is in the `ggplot2` package. 
 We are interested in the relationship between diamond price, cut quality, and color.
 
 ```{r, fig.cap="Stripchart of tooth growth across combinations of dose and supplements."}
@@ -489,7 +489,7 @@ Although "dynamite" plots are common, we shall not include one here and we stron
 
 ### Interactions between continuous and categorical covariates
 
-Sometimes, we're interested in interactions between continuous or numeric covariates and another covariates with discrete categorical levels. 
+Sometimes, we're interested in interactions between continuous or numeric covariates and another covariate with discrete categorical levels. 
 Again, this falls under the broad class of models used in analysis of covariance (ANCOVA). 
 
 ```{r, fig.cap="Simulated interaction between a continuous and categorical covariate."}
@@ -510,7 +510,7 @@ X <- matrix(c(ifelse(x2 == 'A', 1, 0),
 mu_y <- X %*% c(a, b)
 y <- rnorm(n, mu_y, sigma)
 plot(x1, y, col=x2, pch=19)
-legend('topright', col=1:2, legend=c('Group A', 'Group B'), pch=19)
+legend('bottomright', col=1:2, legend=c('Group A', 'Group B'), pch=19)
 ```
 
 Here the intercepts and slopes are allowed to vary for two groups. 
