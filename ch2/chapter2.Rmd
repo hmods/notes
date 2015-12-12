@@ -161,7 +161,7 @@ rbind(unlist(MLE_dsearch[c('mu', 'sigma')]),
 
 This approach is quite general, and can be modified to be used for instance in a linear regression context: 
 
-```{r, fig.cap="Raw data and line of best fit from a linear regression that used `optim` to find the maximum likelihood estimates."}
+```{r}
 n <- 20
 x <- runif(n)
 y <- rnorm(n, 3 + 10 * x, sd = 1)
@@ -179,14 +179,34 @@ theta_init <- c(alpha = 4, beta = 1, log_sigma = 1)
 
 # optimize
 res <- optim(theta_init, nll, y = y, x = x)
-res
+```
 
+Next we can plot the line of best fit that minimized the negative log likelihood of our data.
+
+```{r, fig.cap="Raw data and line of best fit from a linear regression that used `optim` to find the maximum likelihood estimates."}
 plot(x, y)
 abline(a = res$par['alpha'], b = res$par['beta'])
 ```
 
-Direct search and optimization approaches for maximum likelihood estimation can be useful, but in this class we will rarely make use of direct search and optimization. 
-However, the likelihood function and maximum likelihood estimation will continue to play a central role. 
+We may wish to evaluate the output from `optim` so that we can see the maximum likelihood estimates:
+
+```{r}
+res
+```
+
+We should note that `optim` can fail in many ways. 
+For instance, it may fail to find a minimum value. 
+If `res$convergence` is not equal to zero, then the algorithm has not converged at all. 
+See the help file for optim for details (`?optim`), but there are specific convergence codes to indicate that the maximum number of iterations in the algorithm has been reached, that the optimization routine has become "degenerate" in some way, and so on. 
+Worse, there may be multiple minima and it may converge to a local minimum, but not *the* global minimum. 
+Unfortunately there are no warning or error messages for this.
+It is a good idea to experiment with different starting values for the parameters so that you can more reliably find the global minimum (if it exists).
+This concept will show up again later in the context of Markov chain Monte Carlo methods, where we are trying to characterize a probability surface.
+
+Analytic, direct search, and optimization approaches for maximum likelihood estimation can all be useful, but in this class we will rarely make use of direct search and optimization. 
+However, the likelihood function and maximum likelihood estimation will continue to play a central role, as it is involved in the estimation of parameters in Bayesian inference. 
+In a Bayesian context, the likelihood provides the key link between observed data and unknown parameters, but we provide additional probabilistic structure for the parameters in the form of prior distributions for the unknown parameters. 
+The key philosophical difference however remains in the consideration of the data vs. the parameters as fixed vs. unknown quantities.
 
 ## Further reading
 

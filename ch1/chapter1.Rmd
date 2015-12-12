@@ -509,8 +509,6 @@ X <- matrix(c(ifelse(x2 == 'A', 1, 0),
 
 mu_y <- X %*% c(a, b)
 y <- rnorm(n, mu_y, sigma)
-plot(x1, y, col=x2, pch=19)
-legend('bottomright', col=1:2, legend=c('Group A', 'Group B'), pch=19)
 ```
 
 Here the intercepts and slopes are allowed to vary for two groups. 
@@ -533,6 +531,11 @@ abline(coef(m)[1] + coef(m)[3], coef(m)[2] + coef(m)[4], col='red')
 
 The `abline` function, used above, adds lines to plots based on a y-intercept (first argument) and a slope (second argument). 
 Do you understand why the particular coefficients that we used as inputs provide the desired intercepts and slopes for each group? 
+If not, evaluate the design matrix $X$ via `model.matrix(m)` and interpret the coefficients $\beta$ corresponding to each column via `coef(m)`. 
+
+The general strategy of building a design matrix $X$ is useful in many other contexts, such as when the errors are not normally distributed. 
+Specifically, we will soon explore situations where our data may consist of binary observations or integer counts, and the $X \beta$ formulation still plays a central role. 
+Indeed, later on in the course when we begin discussing random effects, it will be possible to represent specific types of model structures with two design matrices: one for the fixed effects $X$, and one for the random effects $Z$. 
 
 ## Further reading
 

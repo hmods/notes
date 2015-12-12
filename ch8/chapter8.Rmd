@@ -20,6 +20,11 @@ The observation model includes the likelihood, and relates the latent process of
 The process model is typically what we're most interested in scientifically, and typically is not fully observed. 
 The parameter model includes any hierarchical structures on parameters and priors for hyperparameters. 
 
+Depending on the nature of any particular problem, it may be advantageous to begin model formulation at different levels. 
+For instance, if there is a specific biological process that one has in mind, but it is not clear what sources of data will be necessary, it might be useful to first construct the process model and then think about what sources of information are needed to estimate the process parameters. 
+In other situations, the process based model may be simple or known ahead of time, but a model must make use of vastly different sources of data. 
+In these cases, it may be more useful to begin by developing an observation model. 
+
 ### Example: occupancy model
 
 In occupancy models, we make binary observations (detected, not detected) on latent binary quantities (present, not present), and we must have priors for the detection and occurrence parameters to complete a Bayesian formulation (the parameter model).

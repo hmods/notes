@@ -70,7 +70,8 @@ x <- seq(0, 1, .01)
 dx <- dbeta(x, 3, 5)
 plot(x, dx, type='l', xlab='p', ylab='[p]')
 
-pbeta(.9, 3, 5)
+# check to see the CDF of the beta prior at 0.8
+pbeta(.8, 3, 5)
 ```
 
 These priors would complete our specification of our Bayesian hierarchical model. 
@@ -166,13 +167,13 @@ Expecting that this assumption is probably false, we may wish to allow individua
 One way to do this would be with a normal (on the link scale) random effect, exactly like log-normal overdispersion and logit-normal overdispersion for the Poisson and binomial examples covered earlier. 
 For instance, we might write such a model as:
 
-$$y_i \sim Poisson(\lambda)$$
+$$y_i \sim Poisson(\lambda_i)$$
 
-$$z_i \sim Binomial(y_i, p)$$
+$$z_i \sim Binomial(y_i, p_i)$$
 
-$$log(\lambda) \sim N(\mu_\lambda, \sigma_\lambda)$$
+$$log(\lambda_i) \sim N(\mu_\lambda, \sigma_\lambda)$$
 
-$$logit(p) \sim N(\mu_p, \sigma_p)$$
+$$logit(p_i) \sim N(\mu_p, \sigma_p)$$
 
 $$\mu_\lambda \sim N(0, 1)$$
 
@@ -335,7 +336,7 @@ Generally speaking correlations between two random variables A and B can result 
 
 - A or B have a causal effect on eachother, directly or indirectly
 - A and B are both affected by some other quantity or quantities
-- we have conditioned on a variable that is influence by A and B (also known as Berkson's paradox)
+- we have conditioned on a variable that is influenced by A and B (also known as Berkson's paradox)
 
 In this case, we can model correlation between these two latent quantities by way of multivariate normal random effects rather than two independent univariate normal random effects. 
 

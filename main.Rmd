@@ -1,7 +1,7 @@
 ---
 title: "Hierarchical modeling course notes"
 author: "Max Joseph"
-date: "November 16, 2015"
+date: "December 11, 2015"
 output:
   pdf_document:
     fig_caption: yes
