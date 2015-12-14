@@ -1,7 +1,6 @@
 ---
 title: "Hierarchical modeling course notes"
-author: "Max Joseph"
-date: "December 11, 2015"
+date: "December 13, 2015"
 output:
   pdf_document:
     fig_caption: yes
@@ -14,6 +13,14 @@ output:
 library(rstan)
 rstan_options(auto_write = TRUE)
 ```
+
+# Preface
+
+This document was made to complement a graduate level course in hierarchical Bayesian models aimed at biology graduate students who have some familiarity with R and statistics. 
+While there are many great textbooks out there to go along with such a class, it seemed potentially useful to compile some concise notes with the code and concepts together.
+These notes are intended to be used along with other resources, which are listed at the end of each chapter. 
+Many people have contributed to the development of these notes including Max Joseph, Will Stutz, Tim Szewczyk, Helen McCreery, Topher Weiss-Lehman, Lauren Shoemaker, and Piet Johnson.
+All source code to compile this document is available on GitHub at [https://github.com/hmods/notes](https://github.com/hmods/notes). 
 
 \newpage
 

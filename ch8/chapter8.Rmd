@@ -27,29 +27,96 @@ In these cases, it may be more useful to begin by developing an observation mode
 
 ### Example: occupancy model
 
-In occupancy models, we make binary observations (detected, not detected) on latent binary quantities (present, not present), and we must have priors for the detection and occurrence parameters to complete a Bayesian formulation (the parameter model).
-If we visit sites $i=1, ..., n$, and conduct $j=1, ..., J$ surveys at each then we can write out these components as follows:
+Occupancy models represent the presence or absence of a species from a location as a Bernoulli random variable $Z$, with $z=0$ corresponding to absence and $z=1$ corresponding to presence. 
+If the species is present $z=1$, it will be detected on a survey with probability $p$.
+So, species may be present but undetected. 
+If a species is absent, it will not be detected (we assume no false detections), but species may be present and undetected. 
 
-**Observation model**
+We can write this as a hierarchical model with occurrence state $z$ treated as a binary latent (hidden) variable: 
 
-Here our detection and nondetection data $y$ arise as a function of the latent occurrence state $z$ and probability of detection $p$. 
-Note that the indexing indicates that the occurrence state $z$ does not vary among surveys.
+$$[z \mid \psi] \sim Bernoulli(\psi)$$
 
-$$y_{ij} \sim Bern(J, z_i p_{ij})$$
+$$[y \mid z, p] \sim Bernoulli(z p)$$
 
-**Process model**
+The observation model is $[y \mid z, p]$, and the process model is $[z \mid \psi]$.
 
-Here, the species is present $z=1$ or absent $z=0$ with some probability $\psi$. 
+If we wish to avoid the use of a discrete parameter, we can marginalize $z$ out of the posterior distribution by summing over all possible values (in this case, just 0 and 1):
 
-$$z_i \sim Bern(\psi_i)$$
+$$[\psi, p \mid y] \propto \sum_z [y \mid z, p] [z \mid \psi] [p, \psi]$$
 
-**Parameter model**
+$$[\psi, p \mid y] \propto  [p, \psi] \sum_z [y \mid z, p] [z \mid \psi]$$
 
-Finally, priors are specified for the occurrence and detection probabilities.
+$$[\psi, p \mid y] \propto  [p, \psi] \big( [y \mid z=1, p] [z=1 \mid \psi] + [y \mid z=0, p] [z=0 \mid \psi] \big)$$
 
-$$\psi_i \sim ...$$
+$$[\psi, p \mid y] \propto  [p, \psi] \big( \psi Bernoulli(p) + (1-\psi) I(y = 0)  \big)$$
 
-$$p_{ij} \sim ...$$
+where $I(y = 0)$ is an identity function that sets $y$ to zero because we assumed that there are no false detections when the species is absent. 
+Multiple surveys are necessary to identify $\psi$ and $p$, so that we can expand the likelihood to account of binomial observation histories, with $k$ surveys conducted per site, and observation history vectors $y_i$ for the $i^{th}$ site:
+
+$$[y_i \mid \psi_i, p_i] \begin{cases} \psi_i Binom(y_i, k) &\mbox{if } \sum y_i > 0 \\ 
+\psi_i Binom(0, k) + (1 - \psi) & otherwise \end{cases}$$
+
+If the organism was observed, then we know that any non-detections represent false absences. 
+If the organism was not observed, then it was either there and not observed (with probability $\psi_i Binom(0, k)$) or it was not there with probability $1 - \psi$. 
+This if-else structure can be exploited in Stan to implement this likelihood:
+
+```
+data { 
+   int<lower=0> nsite; 
+   int<lower=0> nsurvey; 
+   int<lower=0,upper=1> y[nsite,nsurvey]; 
+} 
+parameters { 
+   real<lower=0,upper=1> psi; 
+   real<lower=0,upper=1> p; 
+} 
+model { 
+   for (i in 1:nsite) { 
+     if (sum(y[i]) > 0)
+       // species was observed: it is there
+       increment_log_prob(log(psi) + bernoulli_log(y[i],p)); 
+     else 
+       // it may or may not be there
+       increment_log_prob(log_sum_exp(log(psi) + bernoulli_log(y[i],p), 
+                                      log1m(psi))); 
+   } 
+} 
+```
+
+Now let's simulate some occupancy data and fit the model:
+
+```{r, message=FALSE, warnings=FALSE, results='hide'}
+nsite <- 50
+nsurvey <- 3
+psi <- .4
+p <- .8
+z <- rbinom(nsite, 1, psi)
+y <- matrix(rbinom(nsite * nsurvey, 1, z * p), 
+            nrow=nsite)
+
+stan_d <- list(nsite = nsite, 
+               nsurvey = nsurvey, 
+               y = y)
+out <- stan('occupancy.stan', data = stan_d)
+```
+
+How did we do? 
+
+```{r, fig.cap="Traceplot of the Markov chains from the occupancy model."}
+out
+traceplot(out)
+```
+
+```{r, fig.cap="Posterior densities for occupancy and detection probabilities along with their known true values."}
+par(mfrow=c(1, 2))
+post <- extract(out)
+plot(density(post$psi), main=expression(psi))
+abline(v=psi, col='red', lwd=2)
+plot(density(post$p), main='p')
+abline(v=p, col='red', lwd=2)
+```
+
+The parameter-level model can be extended to include covariates for $\psi$ and $p$ by making use of a link function and design matrices. 
 
 ### Example: N-mixture model
 
