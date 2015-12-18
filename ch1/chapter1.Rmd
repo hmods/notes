@@ -15,7 +15,7 @@ Here we introduce some key topics that will facilitate future understanding hier
 - intercepts, "categorical" effects
 - varying model structure to estimate effects and standard errors
 - interactions as variation in slope estimates for different groups
-- centering input variables and intepreting resulting parameters
+- centering input variables and interpreting resulting parameters
 - assumptions and unarticulated priors
 - understanding residual variance (Gaussian)
 - understanding all of the above graphically
@@ -23,29 +23,42 @@ Here we introduce some key topics that will facilitate future understanding hier
 - notation and linear algebra review: $X\beta$
 
 Linear regression, ANOVA, ANCOVA, and multiple regression models are all species cases of general linear models (hereafter "linear models"). 
-In all of these cases, we have observed some response variable $y$, which is potentially modeled as a function of some covariate(s) $x_1, x_2, ..., x_p$.
+In all of these cases, we have observed some response variable $y$, which is potentially modeled as a function of some covariate(s) $x_1, x_2, ..., x_p$. 
+As we shall see, it ultimately makes no difference whether the covariates are continuous, categorical, or ordinal. 
+In fact, it even makes sense to think of a linear model with no covariates at all.    
 
 ## Model of the mean
 
-If we have no covariates of interest, then we may be interested in estimating the population mean and variance of the random variable $Y$ based on $n$ observations, corresponding to the values $y_1, ..., y_n$. 
+Imagine a situation where you've been asked predict some measurement for a single individual from a population of individuals.
+You don't know anything else about this individual or the population.
+In fact, you don't even know what kind of thing the individual is, nor do you know what kind of measurement you are trying to estimate.
+What's your best guess?
+To give you a little help, imagine that instead of having just the measurement for your focal individual, you have measurements for a larger sample of $n$ individuals.
+Now, it might make sense that your best guess for any given individual will be the average of measurement for all the individuals in the population.
+While this underlying average is completely unknown, you can get a decent idea of what the underlying population average is from your sample of individuals.
+
+Statistically speaking, in this case we have no covariates (extra information about individuals) of interest. Instead, we are interested in estimating the population mean and variance of the random variable $Y$ (our measurement of interest) based on $n$ observations, corresponding to the values $y_1, ..., y_n$.
 Here, capital letters indicate the random variable, and lowercase corresponds to realizations of that variable. 
 This model is sometimes referred to as the "model of the mean". 
 
+First, let's simulate our situation using the $rnorm$ function in R by drawing 20 $Y$ values from an underlying normal distribution with mean equal to zero and standard deviation equal to 1:
+
 ```{r chunk1, fig.width=5, fig.height=4, fig.cap="A set of observed $y$ values, $n=20$."}
-# simulating a sample of y values from a normal distribution
-y <- rnorm(20)
+# simulating a sample of 20 y values from a normal distribution 
+# with mean = 0 and standard deviation = 1
+y <- rnorm(n = 20, mean = 0, sd = 1)
 plot(y)
 ```
 
 We have two parameters to estimate: the mean of $Y$, which we'll refer to as $\mu$, and the variance of $Y$, which we'll refer to as $\sigma^2$. 
 Here, and in general, we will use greek letters to refer to parameters. 
-If $Y$ is normally distributed, then we can assume that the realizations or samples $y$ that we observe are also normally distributed: $y \sim N(\mu, \sigma^2)$. 
+If its reasonable to think that $Y$ is normally distributed, then we can assume that the realizations or samples $y$ that we observe are also normally distributed: $y \sim N(\mu, \sigma^2)$. 
 Here and elsewhere, the $\sim$ symbol represents that some quantity "is distributed as" something else (usually a probability distribution). 
 You can also think of $\sim$ as meaning "is sampled from".
 A key concept here is that we are performing statistical inference, meaning we are trying to learn about (estimate) population-level parameters with sample data. 
 In other words, we are not trying to learn about the sample mean $\bar{y}$ or sample variance of $y$. 
 These can be calculated and treated as known once we have observed a particular collection of $y$ values. 
-The unknown quantities $\mu$ and $\sigma^2$ are the targets of inference. 
+The unknown quantities $\mu$ (the underlying mean of the population) and $\sigma^2$ (the underlying variance) are the targets of inference. 
 
 Fitting this model (and linear models in general) is possible in R with the `lm` function. 
 For this rather simple model, we can estimate the parameters as follows:
@@ -58,11 +71,15 @@ summary(m)
 
 The summary of our model object `m` provides a lot of information. 
 For reasons that will become clear shortly, the estimated population mean is referred to as the "Intercept". 
-Here, we get a point estimate for the population mean $\mu$: `r round(coef(m), 3)` and an estimate of the residual standard deviation $\sigma$: `r round(summary(m)$sigma, 3)`, which we can square to get an estimate of the residual variance $\sigma^2$: `r round(summary(m)$sigma^2, 3)`.
+Here, we get a point estimate for the population mean $\mu$: `r round(coef(m), 3)` and an estimate of the residual standard deviation $\sigma$: `r round(summary(m)$sigma, 3)`, which we can square to get an estimate of the residual variance $\sigma^2$: `r round(summary(m)$sigma^2, 3)`. So, with 20 individuals sampled we didn't to bad.
 
 ## Linear regression
 
-Often, we are interested in estimating the mean of $Y$ as a function of some other variable, say $X$. 
+Now imagine that we have an additional measurement $X$ made on our 20 individuals, and we believe that knowing something about an individual's value of X will give us a better estimate for that individual's Y than simply using the estimated population mean. 
+Keep in mind that this X could be a simple categorical variable (think gender) or a continuous measurement. Either way, knowing X may help us better predict Y.
+
+To put things more statistically, we are interested in estimating the mean of $Y$ as a function of some other variable $X$. That is, for any given value of $X$, what is the underlying mean of the $Y$ values for all individuals that share the same value for $X$. If $X$ is a categorical variable, we are interested in estimating the mean $Y$ value for each group denoted by all the possible values of $X$ (e.g. males and females). If $X$ is continuous, we are interested in estimating what the mean value of $Y$ would be for each possible value of $X$. Standard linear regression typically falls in the latter category but in fact there is no conceptual difference between the two.
+
 Simple linear regression assumes that $y$ is again sampled from a normal distribution, but this time the mean or expected value of $y$ is a function of $x$:
 
 $$y_i \sim N(\mu_i, \sigma^2)$$
@@ -71,6 +88,8 @@ $$\mu_i = \alpha + \beta x_i$$
 
 Here, subscripts indicate which particular value of $y$ and $x$ we're talking about. 
 Specifically, we observe $n$ pairs of values: $(x_i, y_i), ..., (x_n, y_n)$, with all $x$ values known exactly. 
+Note that in this case the expected mean value of $y$ is shifted up or down relative to the global mean depending on the value of $x$, and that when $x_i$ equals zero, the model collapses to the global mean (meaning that our estimate for individuals with a value of zero for their covariate should equal the overall population mean -- more on this below).
+
 Linear regression models can equivalently be written as follows:
 
 $$y_i = \alpha + \beta x_i + \epsilon_i$$
@@ -81,19 +100,28 @@ Key assumptions here are that each of the error terms $\epsilon_1, ..., \epsilon
 This combination of assumptions is often referred to as "independent and identically distributed" or i.i.d. 
 Equivalently, given some particular $x_i$ and a set of linear regression parameters, the distribution of $y_i$ is normal. 
 A common misconception is that linear regression assumes the distribution of $y$ is normal. 
-This is wrong - linear regression assumes that the error terms are normally distributed. 
+This is technically wrong - linear regression assumes that the error terms are normally distributed. 
 The assumption that the variance $\sigma^2$ is constant for all values of $x$ is referred to as homoskedasticity. 
 Rural readers may find it useful to think of skedasticity as the amount of "skedaddle" away from the regression line in the $y$ values. 
 If the variance is changing across values of $x$, then the assumption of homoskedasticity is violated and you've got a heteroskedasticity problem. 
 
+Let's go ahead and simulate a larger data set of 50 individuals as well as some random $X$ values drawn from a uniform distribution between 0 and 1 (i.e. a continuous covariate). We'll then make up some values for $alpha$, $beta$, and $sigma$ so that we can plot a hypothetical relationship between x and y:
+
 ```{r, fig.width=6, fig.height=4, fig.cap="Simulated data from a linear regression model. The true expected value of y given x, E(y | x), is shown as a line."}
-# simulate and plot x and y values
+# simulate x values
 n <- 50
-x <- runif(n)
+x <- runif(n, min = 0, max = 1)
+
+# designate the underlying parameters for our hypothetical population
 alpha <- -2
 beta <- 3
 sigma <- .4
+
+# simulate values of y based on our randomly generated values of x
+# and our underlying parameters
 y <- rnorm(n, mean = alpha + beta * x, sd = sigma)
+
+# plot the values of x and y
 plot(x, y)
 
 # add known mean function 
@@ -105,8 +133,9 @@ legend('topleft',
        bty = 'n')
 ```
 
-The normality assumption means that the probability density of $y$ is highest at the value $\alpha + \beta x$, where the regression line is, and falls off away from the line according to the normal probablity density. 
-This graphically looks like a bell 'tube' along the regression line, adding a dimension along $x$ to the classic bell 'curve'.
+The normality assumption means that the probability density of $y$ is highest at the value $\alpha + \beta x$, where the regression line is, and falls off away from the line according to the normal probability density. In other words, for any given value of $x$, our best guess for $y$ is indicated by the fitted regression line, with the probably of other values for $y$ falling off gradually directly above and below the regression line for that value of $x$
+
+Graphically, this looks like a bell 'tube' along the regression line, adding a dimension along $x$ to the classic bell 'curve'.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=4, fig.cap="Graphical depiction of the linear regression normality assumption. The probability density of y is shown in color. Higher probabilities are shown as more intense colors, and regions with low probabilities are lighter."}
 # show the probability density of y as a function of x
@@ -139,20 +168,23 @@ summary(m)
 ```
 
 The point estimate for the parameter $\alpha$ is called "(Intercept)". 
-This is because our estimate for $\alpha$ is the y-intercept of the estimated regression line when $x=0$ (recall that $y_i = \alpha + \beta x_i + \epsilon_i$).
+This is because our estimate for $\alpha$ is the y-intercept of the estimated regression line when $x=0$.
+If you need convincing, recall that $y_i = \alpha + \beta x_i + \epsilon_i$. If you substitue 0 in for $x$, the equation for why collapses down to $y_i = \alpha + \epsilon_i$, which is the original "model of the mean".
+
 The estimate for $\beta$ is called "x", because it is a coefficient associated with the variable "x" in this model. 
-This parameter is often referred to as the "slope", because it represents the increase in the expected value of $y$ for a one unit increase in $x$ (the rise in y over run in x).
+This parameter is often referred to as the "slope", because it represents the increase in the expected value of $y$ for a one unit increase in $x$ (the rise in y over run in x). Keep in mind, though, that $lm$ does not care about the actual distribution of $x$ you give it. The values of $x$ could be all zeros and ones (or all -3.4 or 2.5) and lm would treat $x$ the same way.
+
 Point estimates for the standard deviation and variance of $\epsilon$ can be extracted as before (`summary(m)$sigma` and `summary(m)$sigma^2`).
 
-### Centering and scaling covariates
+### Centering covariates
 
 Often, it's a good idea to "center" covariates so that they have a mean of zero ($\bar{x} = 0$). 
 This is achieved by subtracting the sample mean of a covariate from the vector of covariate values ($x - \bar{x}$).
-It's also useful to additionally scale covariates so that they are all on a common and unitless scale. 
-While many will divide each covariate by its standard deviation, Gelman and Hill (pg. 57) recommend dividing by twice the standard deviation ($s_x$) so that binary covariates are transformed from $x \in \{0, 1\}$ to $x_t \in \{-0.5, 0.5\}$, where $x_t$ is the transformed covariate: $x_t = \frac{x - \bar{x}}{2 s_x}$. 
-If covariates are not centered and scaled, then it is common to observe correlations between estimated slopes and intercepts. 
 
-```{r, echo=FALSE, fig.width=6, fig.height=4, fig.cap="Linear regression line of best fit with 95% confidence intervals for the line. Notice that if the slope is lower (the upper dashed line) then the intercept necessarily goes up, and if the slope is higher (the lower dashed line), the intercept must decrease."}
+If covariates are not centered, then it is common to observe correlations between estimated slopes and intercepts. 
+Consider the following graph, which shows the the middle, lower, and upper range of the estimated slopes and intercepts using an uncentered covariate (the center is at x = 3.5):
+
+```{r, echo=FALSE, fig.width=6, fig.height=4, fig.cap="Linear regression line of best fit with 95% confidence intervals for the line when x is uncentered"}
 
 x <- runif(n)
 alpha <- 0
@@ -163,23 +195,26 @@ x <- x + 3
 plot(x, y, xlim=c(0, max(x)), ylim=c(-4, max(y)))
 m <- lm(y ~ x)
 abline(m, col='blue')
+abline(v = 0, col = "red", lty = 2)
 px <- seq(-1, max(x) + 1, length.out=100)
 py <- predict(m, list(x=px), se.fit=TRUE, interval='confidence')
 lines(px, py$fit[, 'lwr'], lty=2, col='blue')
 lines(px, py$fit[, 'upr'], lty=2, col='blue')
-```
+```  
 
+Note that for the larger slope values (steeper dashed blue line), the estimated value for the intercept (where the dashed blue line crosses the dashed red line) is smaller, and vice versa for smaller slope values.
 So, we expect that in this case, the estimates for the intercept and slope must be negatively correlated.
-This is borne out in the confidence region for our estimates of $\alpha$ and $\beta$. 
-Usually, people inspect univariate confidence intervals for parameters, e.g.,
+
+Usually, people inspect univariate confidence intervals for our estimates of $\alpha$ and $\beta$. , e.g.,
 
 ```{r}
-confint(m)
+# calculate 95% confidence intervals for the parameters estimated in model m
+confint(m, level = 0.95)
 ```
 
-This is misleading because our estimates for these parameters are correlated. 
-For any given value of the intercept, there are only certain values of the slope that are supported.
-To assess this possibility, we might also be interested in the bivariate confidence ellipse for these two parameters. 
+However, these *univariate* confidence intervals are somewhat misleading because, as we shall see, our estimates for these parameters are correlated. 
+For any given value of the intercept, there are only certain values of the slope within the univariate confidence interval that are actually supported.
+To assess this possibility, consider the *bivariate* confidence ellipse for these two parameters. 
 We can evaluate this quantity graphically as follows with some help from the `car` package:
 
 ```{r, fig.cap="The bivariate confidence region for the slope and intercept. Correlation implies that for any particular value of alpha or beta, only a small subset of the values of the other parameter are supported. This information is not available by considering the univariate confidence intervals alone."}
@@ -187,8 +222,7 @@ library(car)
 confidenceEllipse(m)
 ```
 
-This is not great. 
-We want to be able to directly use the univariate confidence intervals. 
+This is not great, because the possible values for each parameter are heavily cconstrained by the estimate for the other, and we cannot take our univarite confidence intervals at face value.
 Our problem can be solved by centering $x$:
 
 ```{r, echo=FALSE, fig.height=5, fig.width=9, fig.cap="New line of best fit with confidence ellipses for the slope and intercept after centering the covariate $x$"}
@@ -197,6 +231,7 @@ x <- x - mean(x)
 m <- lm(y ~ x)
 plot(x, y)
 abline(m, col='blue')
+abline(v = 0, col = "red", lty = 2)
 px <- seq(min(x) - 1, max(x) + 1, length.out=100)
 py <- predict(m, list(x=px), se.fit=TRUE, interval='confidence')
 lines(px, py$fit[, 'lwr'], lty=2, col='blue')
@@ -207,15 +242,35 @@ confidenceEllipse(m)
 Now there is no serious correlation in the estimates and we are free to use the univariate confidence intervals without needing to consider the joint distribution of the slope and intercept. 
 This trick helps with interpretation, but it will also prove useful later in the course in the context of Markov chain Monte Carlo (MCMC) sampling. 
 
+### Scaling covariates
+
+It is usually also useful to scale covariates. There are two reasons for scaling covariates. 
+First, if values of X are extremely small (e.g. $10^-6$) or extremely large (e.g. $10^6$ or greater) then it doesn't make sense to think about changes of 1 $x$ unit. 
+For example, if x is a distance measurement where all the values are on the scale of 1000km, the $\beta$ value for a change in 1 kilometer may not be helpful. 
+If we scale the covariate by dividing by 1000, then the $\beta$ estimate now gives the change in $y$ for every 1000km -- much more useful!
+
+Second, when more than one covariate is present, it is useful to be able to compare the magnitudes of the $\beta$ estimates for each covariate in a meaningful way. There are a lot of possibilities, depending on the types of covariates. 
+One good option is to divide each covariate by its standard deviation, such that a change in 1 $x$ unit would correspond to a change in 1 standard deviation of $x$. This is especially useful when all covariates are continuous.
+
+If one covariate is binary, it may make sense to divide by twice the standard deviation ($s_x$) (as recommended by German and Hill p. 57). This has the two effects. First, a 1 unit change in $X$ now corresponds to a the change from 1 standard deviation below the mean to one standard deviation above the mean. Second, when binary variables are present, dividing by twice the standard deviation transforms binary covariates from $x \in \{0, 1\}$ to $x_t \in \{-0.5, 0.5\}$, where $x_t$ is the transformed covariate: $x_t = \frac{x - \bar{x}}{2 s_x}$. Now 1 unit change in a binary covariate corresponds exactly to the change from on binary category to the other.
+
 ### Checking assumptions
 
-We have assumed that the distribution of error terms is normally distributed, and this assumption is worth checking. 
+One of the most important aspects of fitting statistical models is checking assumptions. 
+This not only ensures that we have used the correct type of model for our data, but more importantly can give us insight into how to improve the model and, hence, any inferences derived from our modeling.
+
+In the above cases we have assumed that the distribution of error terms is normally distributed, and this assumption is worth checking. 
 Below, we plot a histogram of the residuals (another name for the $\epsilon$ parameters) along with a superimposed normal probability density so that we can check normality. 
 
 ```{r, fig.width=5, fig.height=4, fig.cap="Simulated data from a linear regression model."}
+# generate a histogram of the residuals from the m model
 hist(resid(m), breaks = 20, freq = F, 
      main = 'Histogram of model residuals')
+
+# generate x-values for a normal curve
 curve_x <- seq(min(resid(m)), max(resid(m)), .01)
+
+# add the normal curve line
 lines(curve_x, dnorm(curve_x, 0, summary(m)$sigma))
 ```
 
@@ -231,7 +286,7 @@ plot(m, 2)
 To assess heteroskedasticity, it is useful to inspect a plot of the residuals vs. fitted values, e.g. `plot(m, 1)`. 
 If it seems as though the spread or variance of residuals varies across the range of fitted values, then it may be worth worrying about homoskedasticity and trying some transformations to fix the problem. 
 
-## Analysis of variance
+## Categorical Covariates
 
 Sometimes, the covariate of interest is not continuous but instead categorical (e.g., "chocolate", "strawberry", or "vanilla"). 
 We might again wonder whether the mean of a random variable $Y$ depends on the value of this covariate. 
@@ -245,17 +300,18 @@ The notation $\alpha_{j[i]}$ represents the notion that the $i^{th}$ observation
 The above model is perfectly legitimate, and our parameters to estimate are the group means $\alpha_1, ..., \alpha_J$ and the residual variance $\sigma^2$. 
 This parameterization is called the "means" parameterization, and though it is perhaps easier to understand than the following alternative, it is less often used. 
 
-This model is usually parameterized not in terms of the group means, but rather in terms of an intercept (corresponding to the mean of one "reference" group), and deviations from the intercept (differences between a group of interest and the intercept). 
+This model is usually parametrized not in terms of the group means, but rather in terms of an intercept (corresponding to the mean of one "reference" group), and deviations from the intercept (differences between a group of interest and the intercept). 
 For instance, in R, the group whose mean is the intercept (the "reference" group) will be the group whose name comes first alphabetically. 
 Either way, we will estimate the same number of parameters. 
-So if our groups are "chocolate", "strawberry", and "vanilla", R will assign the group "chocolate" to be the intercept, and provide 2 more coefficient estimates for the difference between the estimated group mean of strawberry vs. chocoloate, and vanilla vs. chocolate. 
+So if our groups are "chocolate", "strawberry", and "vanilla", R will assign the group "chocolate" to be the intercept, and provide 2 more coefficient estimates for the difference between the estimated group mean of strawberry vs. chocolate, and vanilla vs. chocolate. 
 
 This parameterization can be written as
 
 $$y_i \stackrel{iid}{\sim} N(\mu_0 + \beta_{j[i]}, \sigma^2)$$
 
 where $\mu_0$ is the "intercept" or mean of the reference group, and $\beta_j$ represents the difference in the population mean of group $j$ compared to the reference group (if $j$ is the reference group, the $\beta_j = 0$). 
-Traditionally this model is called simple one-way analysis of variance, but we view it simply as another special case of a linear model.
+
+Traditionally, this model (liner model with a single categorical predictor) is analyzed using a one-way analysis of variance (ANOVA), where essentially the goal is to determine whether incorporating the categorical predictor in the model provides a better estimate for $y$ than simply using the global mean (by applying an F-test). When viewed from the point of view of simply getting the best estimates we can for the mean of each category, we see that the model used to estimate an ANOVA is simply another special case of a linear model. Indeed, note the resemblance between this formulation and the equation for a linear model with a continuous covariate from earlier.
 
 The following example illustrates some data simulation, visualization, and parameter estimation in this context. 
 Specifically, we assess 60 humans for their taste response to three flavors of ice cream. 
@@ -284,14 +340,14 @@ The syntax is exactly the same as with linear regression.
 The only difference is that our input `x` is not numeric, but a character vector. 
 
 ```{r}
-m <- lm(y ~ x)
-summary(m)
+m1 <- lm(y ~ x)
+summary(m1)
 ```
 
 Because chocolate comes first alphabetically, it is the reference group and the "(Intercept)" estimate corresponds to the estimate of the group-level mean for chocolate. 
 The other two estimates are contrasts between the other groups and this reference group, i.e.  "xstrawberry" is the estimated difference between the group mean for strawberry and the reference group. 
 
-If we wish instead to use a means paramaterization, we need to supress the intercept term in our model as follows:
+However it may make more sense to use the means parameterization to directly estimate the mean for each group. We need to tell R to suppress the intercept term in our model:
 
 ```{r}
 m <- lm(y ~ 0 + x)
@@ -304,6 +360,14 @@ Arguably, this approach is more useful because it simplifies the construction of
 confint(m)
 ```
 
+One important philosophical point. Note that a frequentist ANOVA test:
+
+```{r}
+anova(m1)
+```
+
+indicates that the observed data are not terribly consistent with the null hypothesis that humans think there is no difference in ice cream flavors. However, it doesn't tell us a whole lot about just how different humans think these flavors are, nor which is the most flavorful, or whether certain flavors don't taste any better than others. Of course, you could wrap yourself in knots trying a battery of post-hoc tests after running the ANOVA, but perhaps its better just to use the means parameterization, the estimated confidence intervals, and little common sense to say that humans probably think chocolate tastes better than strawberry or vanilla, but that the latter two or more or less equivalent.
+
 ### Checking assumptions
 
 Our assumptions in this simple one way ANOVA context are identical to our assumptions with linear regression. 
@@ -315,6 +379,8 @@ par(mfrow=c(2, 2))
 plot(m)
 ```
 
+Note that there are now just three "fitted values" (one for each group) with residuals around those fitted values, but that the residuals are still consistent with a normal distribution (see Q-Q plot).
+
 ## General linear models
 
 We have covered a few special cases of general linear models, which are usually written as follows:
@@ -323,7 +389,7 @@ $$y \stackrel{iid}{\sim} N(X \beta, \sigma^2)$$
 
 Where $y$ is a vector consisting of $n$ observations, $X$ is a "design" matrix with $n$ rows and $p$ columns, and $\beta$ is a vector of $p$ parameters. 
 There are multivariate general linear models (e.g., MANOVA) where the response variable is a matrix and a covariance matrix is used in place of a scalar variance parameter, but we'll stick to univariate models for simplicity.
-The key point here is that the product of $X$ and $\beta$ provides the mean of the normal distribution from which $y$ is drawn. 
+The key point here is that *the product of $X$ and $\beta$ provides the mean of the normal distribution from which $y$ is drawn.* 
 From this perspective, the difference between the model of the mean, linear regression, ANOVA, etc., lies in the structure of $X$ and subsequent interpretation of the parameters $\beta$. 
 This is a very powerful idea that unites many superficially disparate approaches. 
 It also is the reason that these models are considered "linear", even though a regression line might by quite non-linear (e.g., polynomial regression). 
@@ -351,18 +417,29 @@ Here we prefer to consider these all as special cases of general linear models.
 ### Interactions between two continuous covariates
 
 Here we demonstrate simulation and estimation for a model with an interaction between two continuous covariates. 
-Notice that in the simulation, we have exploited the $X \beta$ construct to generate a vector of expected values for $y$. 
+In the simulation, we exploit the $X \beta$ construct to generate a vector of expected values for $y$. 
 
 ```{r}
+# set up 
 n <- 50
-x1 <- rnorm(n)
+x1 <- rnorm(n) 
 x2 <- rnorm(n)
 beta <- c(.5, 1, -1, 2)
 sigma <- 1
+
+# generate the design matrix X with n rows and four columns
+# corresponding to the intercept, two main effects, and the interaction effect
 X <- matrix(c(rep(1, n), x1, x2, x1 * x2), nrow=n)
+
+# rather than use a linear equation (a + bx1 + bx2 + ...)
+# we use matrix multiplication to generate mean y values
 mu_y <- X %*% beta
+
+# now we simulate values for y using the simulated means and sigma = 1
 y <- rnorm(n, mu_y, sigma)
-m <- lm(y ~ x1 * x2)
+
+# estimate the parameters
+m <- lm(y ~ x1 + x2 + x1:x2)
 summary(m)
 ```
 
@@ -391,8 +468,7 @@ plot(allEffects(m))
 
 ### Interactions between two categorical covariates
 
-Here we demonstrate interaction between two categorical covariates, using the `diamonds` dataset which is in the `ggplot2` package. 
-We are interested in the relationship between diamond price, cut quality, and color.
+Here we demonstrate interaction between two categorical covariates, using the `ToothGrowth` dataset. Specifically we are interested in how the the length of odontoblasts (teeth) in each of 10 guinea pigs varies among three dose levels of Vitamin C (0.5, 1, and 2 mg) and two supplement delivery methods (orange juice or ascorbic acid). It's possible that the effect of the dose might vary as a function of the delivery method, indicating an interaction between dose and supplement.
 
 ```{r, fig.cap="Stripchart of tooth growth across combinations of dose and supplements."}
 str(ToothGrowth)
@@ -421,10 +497,10 @@ summary(m)
 ```
 
 This summary gives the effects-parameterization version of the summary. 
-The "(Intercept)" refers to the combination of factor levels that occur first alphabetically: in this case, a dose of 0.5 with the "OJ" supplement. 
-The coefficients for `dose1` and `dose2` represent estimated contrasts for these two groups relative to the intercept. 
+The "(Intercept)" refers to individuals with the specific combination of factor levels that occur first alphabetically: in this case, those that received a dose of 0.5 with the "OJ" supplement. 
+The coefficients for `dose1` and `dose2` represent estimated contrasts for these pigs that received doses 1 and 2 using the "OJ" supplement relative to the intercept. 
 The coefficient for `suppVC` represents the contrast between the "VC" and "OJ" levels of supplement when the dose is 0.5.
-The interaction terms represent the difference in the effect of VC for `dose1` and `dose2` relative to a dose of 0.5. 
+The interaction terms represent the difference in the effect of VC for `dose1` and `dose2` relative to a dose of 0.5 using "VC". 
 None of this is particularly intuitive, but this information can be gleaned by inspecting the design matrix $X$ produced by `lm` in the process of fitting the model. 
 Inspecting the design matrix along with the dataset to gives a better sense for how $X$ relates to the factor levels:
 
@@ -432,47 +508,63 @@ Inspecting the design matrix along with the dataset to gives a better sense for 
 cbind(model.matrix(m), ToothGrowth)
 ```
 
-Often, researchers want to know if interactions need to be included in the model. 
+### Interpreting Models
+
+Now for future work in make guinea pig teeth grow, we may want to know whether the dose and method of supplementation interact in their influence on length.
 From a null hypothesis significance testing perspective, we can evaluate the 'significance' of the interaction term as follows: 
 
 ```{r}
 anova(m)
 ```
 
-We find that the interaction between dose and supplement is statistically significant, meaning that if we assume that there is no interaction, it is unlikely to observe data that are as or more extreme as what we have observed over the course of infinitely many replicated experiments that will probably never occur.
-Although this is far from intuitive, this approach has been widely used.
-We will introduce a more streamlined procedure in chapter 3 that 1) does not assume that the effect is zero to begin with, and 2) does not necessarily invoke a hypothetical infinite number of replicated realizations of the data, conditional on one particular parameter value. 
-An alternative approach would be to use information theoretics to decide whether the interaction is warranted:
+In this case we found that the interaction was significant, but what does that mean, really? Well it means that if we ran this experiment repeatedly (really, an infinite number of times) and there was no actual interaction, than we would be unlikely to have observed the data *as extreme or more extreme* as the data in our particular experiment (if we used a p-value cutoff of 0.05 than we can be more specific and say that the observed (or more extreme) data would occur in less than 5% of the hypothetical infinite amount of experiments.) In our case the frequentist statistician would say, yes, use the interaction to predict tooth growth in guinea pigs (and use the point estimate generated from your particular observed data set as your best guess for the strength of the interaction).
 
+Of course, if our data had been ever so slightly less extreme, such the calculated p-value for the interaction was now 0.06 (or 0.11), our frequentist statistician would say there is no strong evidence for an interaction and that we should not use it to predict tooth length in the future.
+
+Although this is far from intuitive, it has been widely used (and abused)
+
+An alternative approach would be to use information theoretical to decide whether the interaction is warranted.
+In the past decade following Burnham and Anderson's book on the topic, ecologists have leaned heavily on Akaike's information criterion (AIC), which is a relative measure of model quality (balancing goodness of fit with model complexity). The essential idea behind the use of AIC is that while the interaction may help us predict our observed data better than a model without an interaction, is it really going to help us fit future data well? At one extreme you could imagine a model that has a separate parameter for each observations. Voila, you've fit your model perfectly, but its utter crap when it comes to predicting future values. AIC and similar metric penalize us for adding more parameters than absolutely necessary 
+
+We can compare how the two models we are considering (with and without interaction) compare using AIC:
 ```{r}
 m2 <- lm(len ~ dose + supp, data = ToothGrowth)
 AIC(m, m2)
 ```
 
-In the past decade following Burnham and Anderson's book on the topic, ecologists have leaned heavily on Akaike's information criterion (AIC), which is a relative measure of model quality (balancing goodness of fit with model complexity). 
-Here we see that the original model `m` with interaction has a lower AIC value, and is therefore better supported. 
+Here we see that the original model `m` with interaction has a lower AIC value, and is therefore better supported. Note that AIC is not without its own drawbacks (just how much lower AIC is really *lower*?).
 AIC can be considered to be similar to cross validation, approximating the ability of a model to predict future data.
 
-Being somewhat lazy, we might again choose to plot the results of this model using the `effects` package. 
+In chapter 3 we will introduce a more streamlined procedure that 1) does not assume that the effect is zero to begin with 2) does not invoke a hypothetical infinite number of replicated realizations of the data, conditional on one particular parameter value.
+
+
+### Plotting the data
+
+Being somewhat lazy, we might again choose to plot the results of our interaction model using the `effects` package. 
 
 ```{r, fig.cap="Default effects plot from the `effects` package."}
 plot(allEffects(m))
 ```
 
 This is less than satisfying, as it does not show any data. 
-All we see is model output. 
-If the model is crap, then the output and these plots are also crap. 
-But, evaluating the crappiness of the model is difficult when there are no data shown.
-Ideally, the data can be shown along with the estimated group means and some indication of uncertainty. 
-If we weren't quite so lazy, we could use the `predict` function to obtain confidence intervals for the means of each group. 
+All we see is model output (which looks pretty snazzy!), but if the model doesn't actually fit the data well at all (i.e. the model is crap), then the output is meaningless. Ideally we want to be able to juxtapose our observed data with what what we would expect from the model. Fortunately, its possible to plot both the observed data points along with the estimated group means and some indication of uncertainty in our estimates of those means. 
 
-```{r, fig.cap="Raw data along with confidence intervals for the means of each group. Notice how much mor information is shown here compared to a bar chart with error bars."}
+For starters, if we weren't quite so lazy, we could use the `predict` function to obtain confidence intervals for the means of each group. 
+
+```{r}
 # construct a new data frame for predictions
 g <- expand.grid(supp = levels(ToothGrowth$supp), 
                  dose = levels(ToothGrowth$dose))
 p <- predict(m, g, interval = 'confidence', type='response')
 predictions <- cbind(g, data.frame(p))
+predictions
+```
 
+Now we have the model fits plus 95% confidence intervals for predictions (for now let's assume the confidence intervals represent our uncertainty in the estimate of the mean and not what they actually indicate, which is an interval that, if we calculated it for our each of our infinite repetitions of the same experiment, the "true" population mean would fall within the calculated confidence interval 95 times out of 100--what a mouthful!)
+
+We could try to compare these using the table, but lets illustrate them graphically along with the raw data:
+
+```{r, fig.cap="Raw data along with confidence intervals for the means of each group. Notice how much more information is shown here compared to a bar chart with error bars."}
 ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) + 
   geom_segment(data=predictions, 
                aes(y=lwr, yend=upr, 
@@ -487,20 +579,48 @@ This makes it easier for readers to understand how the model relates to, fits, a
 If you wish to obscure the data, you could make a bar plot with error pars to represent the standard errors. 
 Although "dynamite" plots are common, we shall not include one here and we strongly recommend that you never produce such a plot ([more here](http://biostat.mc.vanderbilt.edu/wiki/pub/Main/TatsukiRcode/Poster3.pdf)). 
 
+For kicks, lets just look at the predictions (in blue) if we assume the interaction is zero:
+
+```{r, echo = FALSE, fig.cap="Raw data along with confidence intervals for the means of each group when the interaction is assumed to be non-existent"}
+g <- expand.grid(supp = levels(ToothGrowth$supp), 
+                 dose = levels(ToothGrowth$dose))
+p2 <- predict(m2, g, interval = 'confidence', type='response')
+predictions2 <- cbind(g, data.frame(p2))
+ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) + 
+  geom_segment(data=predictions, 
+               aes(y=lwr, yend=upr, 
+                   xend=interaction(dose, supp)), col='red') + 
+geom_segment(data=predictions2, 
+               aes(y=lwr, yend=upr, 
+                   xend=interaction(dose, supp)), col='blue') + 
+  geom_point(data=predictions, aes(y=fit), color='red', size=2, shape=2) +
+  geom_point(data=predictions2, aes(y=fit), color='blue', size=2, shape=2) +  
+  geom_jitter(position = position_jitter(width=.1), shape=1) + 
+  ylab("Length")
+```
+
+So, not that different, but perhaps we are overshooting the 2:OJ and 1:VC categories and undershooting the 1:OJ and 2:VC categories a bit.
+
 ### Interactions between continuous and categorical covariates
 
 Sometimes, we're interested in interactions between continuous or numeric covariates and another covariate with discrete categorical levels. 
 Again, this falls under the broad class of models used in analysis of covariance (ANCOVA). 
 
+Once again, let's simulate some hypothetical data where we have two groups  and a continuous covariate, and the continuous covariate differs for the two groups (note again the use of the design matrix):
+
 ```{r, fig.cap="Simulated interaction between a continuous and categorical covariate."}
 x1 <- rnorm(n)
 x2 <- factor(sample(c('A', 'B'), n, replace=TRUE))
 
-# generate slopes and intercepts for the first and second groups
+# generate random intercepts first and second groups
 a <- rnorm(2)
+
+# generate random slopes
 b <- rnorm(2)
+
 sigma <- .4
 
+# the design matrix (note that )
 X <- matrix(c(ifelse(x2 == 'A', 1, 0), 
               ifelse(x2 == 'B', 1, 0), 
               ifelse(x2 == 'A', x1, 0), 
@@ -511,12 +631,10 @@ mu_y <- X %*% c(a, b)
 y <- rnorm(n, mu_y, sigma)
 ```
 
-Here the intercepts and slopes are allowed to vary for two groups. 
-We can fit a model with an interaction between these covariates. 
-The intercepts and slopes are estimated separately for the two groups. 
+When we fit an ANCOVA we can assume that the slope of our continuous covariate does not differ between the two groups (and fit only a single predictor that applies to both groups), or we can fit an "interaction" between the continuous and categorical factors, which implicitly tells R to assume that slopes differ and to fit them separately. Let's go ahead and try the latter
 
 ```{r}
-m <- lm(y ~ x1 * x2)
+m <- lm(y ~ x1 + x2 + x1:x2)
 summary(m)
 ```
 
@@ -543,4 +661,4 @@ Schielzeth, H. 2010. Simple means to improve the interpretability of regression 
 
 Enqvist, L. 2005. The mistreatment of covariate interaction terms in linear model analyses of behavioural and evolutionary ecology studies. Animal Behaviour 70:967–971.  
 
-Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 3-4.
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 3-4.
