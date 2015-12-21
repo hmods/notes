@@ -24,7 +24,7 @@ Here we introduce some key topics that will facilitate future understanding hier
 
 Linear regression, ANOVA, ANCOVA, and multiple regression models are all species cases of general linear models (hereafter "linear models"). 
 In all of these cases, we have observed some response variable $y$, which is potentially modeled as a function of some covariate(s) $x_1, x_2, ..., x_p$. 
-As we shall see, it ultimately makes no difference whether the covariates are continuous, categorical, or ordinal. 
+As we shall see, conceptually it makes little difference whether the covariates are continuous, categorical, or ordinal. 
 In fact, it even makes sense to think of a linear model with no covariates at all.    
 
 ## Model of the mean
@@ -41,7 +41,7 @@ Statistically speaking, in this case we have no covariates (extra information ab
 Here, capital letters indicate the random variable, and lowercase corresponds to realizations of that variable. 
 This model is sometimes referred to as the "model of the mean". 
 
-First, let's simulate our situation using the $rnorm$ function in R by drawing 20 $Y$ values from an underlying normal distribution with mean equal to zero and standard deviation equal to 1:
+First, let's simulate our situation using the `rnorm` function in R by drawing 20 $Y$ values from an underlying normal distribution with mean equal to zero and standard deviation equal to 1:
 
 ```{r chunk1, fig.width=5, fig.height=4, fig.cap="A set of observed $y$ values, $n=20$."}
 # simulating a sample of 20 y values from a normal distribution 
@@ -52,7 +52,7 @@ plot(y)
 
 We have two parameters to estimate: the mean of $Y$, which we'll refer to as $\mu$, and the variance of $Y$, which we'll refer to as $\sigma^2$. 
 Here, and in general, we will use greek letters to refer to parameters. 
-If its reasonable to think that $Y$ is normally distributed, then we can assume that the realizations or samples $y$ that we observe are also normally distributed: $y \sim N(\mu, \sigma^2)$. 
+If it's reasonable to think that $Y$ is normally distributed, then we can assume that the realizations or samples $y$ that we observe are also normally distributed: $y \sim N(\mu, \sigma^2)$. 
 Here and elsewhere, the $\sim$ symbol represents that some quantity "is distributed as" something else (usually a probability distribution). 
 You can also think of $\sim$ as meaning "is sampled from".
 A key concept here is that we are performing statistical inference, meaning we are trying to learn about (estimate) population-level parameters with sample data. 
@@ -78,7 +78,10 @@ Here, we get a point estimate for the population mean $\mu$: `r round(coef(m), 3
 Now imagine that we have an additional measurement $X$ made on our 20 individuals, and we believe that knowing something about an individual's value of X will give us a better estimate for that individual's Y than simply using the estimated population mean. 
 Keep in mind that this X could be a simple categorical variable (think gender) or a continuous measurement. Either way, knowing X may help us better predict Y.
 
-To put things more statistically, we are interested in estimating the mean of $Y$ as a function of some other variable $X$. That is, for any given value of $X$, what is the underlying mean of the $Y$ values for all individuals that share the same value for $X$. If $X$ is a categorical variable, we are interested in estimating the mean $Y$ value for each group denoted by all the possible values of $X$ (e.g. males and females). If $X$ is continuous, we are interested in estimating what the mean value of $Y$ would be for each possible value of $X$. Standard linear regression typically falls in the latter category but in fact there is no conceptual difference between the two.
+To put things more statistically, we are interested in estimating the mean of $Y$ as a function of some other variable $X$. 
+That is, for any given value of $X$, what is the underlying mean of the $Y$ values for all individuals that share the same value for $X$. If $X$ is a categorical variable, we are interested in estimating the mean $Y$ value for each group denoted by all the possible values of $X$ (e.g. males and females). 
+If $X$ is continuous, we are interested in estimating what the mean value of $Y$ would be for each possible value of $X$. 
+Linear regression falls in the latter category but there is little conceptual difference between the two.
 
 Simple linear regression assumes that $y$ is again sampled from a normal distribution, but this time the mean or expected value of $y$ is a function of $x$:
 
@@ -105,7 +108,7 @@ The assumption that the variance $\sigma^2$ is constant for all values of $x$ is
 Rural readers may find it useful to think of skedasticity as the amount of "skedaddle" away from the regression line in the $y$ values. 
 If the variance is changing across values of $x$, then the assumption of homoskedasticity is violated and you've got a heteroskedasticity problem. 
 
-Let's go ahead and simulate a larger data set of 50 individuals as well as some random $X$ values drawn from a uniform distribution between 0 and 1 (i.e. a continuous covariate). We'll then make up some values for $alpha$, $beta$, and $sigma$ so that we can plot a hypothetical relationship between x and y:
+Let's go ahead and simulate a larger data set of 50 individuals as well as some random $X$ values drawn from a uniform distribution between 0 and 1 (i.e. a continuous covariate). We'll then make up some values for $\alpha$, $\beta$, and $\sigma$ so that we can plot a hypothetical relationship between x and y:
 
 ```{r, fig.width=6, fig.height=4, fig.cap="Simulated data from a linear regression model. The true expected value of y given x, E(y | x), is shown as a line."}
 # simulate x values
@@ -212,9 +215,9 @@ Usually, people inspect univariate confidence intervals for our estimates of $\a
 confint(m, level = 0.95)
 ```
 
-However, these *univariate* confidence intervals are somewhat misleading because, as we shall see, our estimates for these parameters are correlated. 
+However, these univariate confidence intervals are somewhat misleading because, as we shall see, our estimates for these parameters are correlated. 
 For any given value of the intercept, there are only certain values of the slope within the univariate confidence interval that are actually supported.
-To assess this possibility, consider the *bivariate* confidence ellipse for these two parameters. 
+To assess this possibility, consider the bivariate confidence ellipse for these two parameters. 
 We can evaluate this quantity graphically as follows with some help from the `car` package:
 
 ```{r, fig.cap="The bivariate confidence region for the slope and intercept. Correlation implies that for any particular value of alpha or beta, only a small subset of the values of the other parameter are supported. This information is not available by considering the univariate confidence intervals alone."}
@@ -222,10 +225,10 @@ library(car)
 confidenceEllipse(m)
 ```
 
-This is not great, because the possible values for each parameter are heavily cconstrained by the estimate for the other, and we cannot take our univarite confidence intervals at face value.
+This is not great, because the possible values for each parameter are heavily constrained by the estimate for the other, and we cannot take our univariate confidence intervals at face value.
 Our problem can be solved by centering $x$:
 
-```{r, echo=FALSE, fig.height=5, fig.width=9, fig.cap="New line of best fit with confidence ellipses for the slope and intercept after centering the covariate $x$"}
+```{r, fig.height=5, fig.width=9, fig.cap="New line of best fit with confidence ellipses for the slope and intercept after centering the covariate $x$"}
 par(mfrow=c(1, 2))
 x <- x - mean(x)
 m <- lm(y ~ x)
@@ -239,7 +242,7 @@ lines(px, py$fit[, 'upr'], lty=2, col='blue')
 confidenceEllipse(m)
 ```
 
-Now there is no serious correlation in the estimates and we are free to use the univariate confidence intervals without needing to consider the joint distribution of the slope and intercept. 
+Now there is less correlation in the estimates and we can use the univariate confidence intervals without needing to consider the joint distribution of the slope and intercept. 
 This trick helps with interpretation, but it will also prove useful later in the course in the context of Markov chain Monte Carlo (MCMC) sampling. 
 
 ### Scaling covariates
@@ -311,7 +314,9 @@ $$y_i \stackrel{iid}{\sim} N(\mu_0 + \beta_{j[i]}, \sigma^2)$$
 
 where $\mu_0$ is the "intercept" or mean of the reference group, and $\beta_j$ represents the difference in the population mean of group $j$ compared to the reference group (if $j$ is the reference group, the $\beta_j = 0$). 
 
-Traditionally, this model (liner model with a single categorical predictor) is analyzed using a one-way analysis of variance (ANOVA), where essentially the goal is to determine whether incorporating the categorical predictor in the model provides a better estimate for $y$ than simply using the global mean (by applying an F-test). When viewed from the point of view of simply getting the best estimates we can for the mean of each category, we see that the model used to estimate an ANOVA is simply another special case of a linear model. Indeed, note the resemblance between this formulation and the equation for a linear model with a continuous covariate from earlier.
+Traditionally, this model (linear model with a single categorical predictor) is analyzed using a one-way analysis of variance (ANOVA), where essentially the goal is to determine whether there is support for incorporating the categorical predictor in the model compared to a global mean model by applying an F-test. 
+In any case, the group sample means provide a maximum likelihood estimate for the population means of each group, and this is another linear model.
+Note the resemblance between this formulation and the equation for a linear model with a continuous covariate from earlier.
 
 The following example illustrates some data simulation, visualization, and parameter estimation in this context. 
 Specifically, we assess 60 humans for their taste response to three flavors of ice cream. 
@@ -366,7 +371,7 @@ One important philosophical point. Note that a frequentist ANOVA test:
 anova(m1)
 ```
 
-indicates that the observed data are not terribly consistent with the null hypothesis that humans think there is no difference in ice cream flavors. However, it doesn't tell us a whole lot about just how different humans think these flavors are, nor which is the most flavorful, or whether certain flavors don't taste any better than others. Of course, you could wrap yourself in knots trying a battery of post-hoc tests after running the ANOVA, but perhaps its better just to use the means parameterization, the estimated confidence intervals, and little common sense to say that humans probably think chocolate tastes better than strawberry or vanilla, but that the latter two or more or less equivalent.
+indicates that the observed data are not terribly consistent with the null hypothesis that humans think there is no difference in ice cream flavors. However, it doesn't tell us a whole lot about just how different humans think these flavors are, nor which is the most flavorful, or whether certain flavors don't taste any better than others. Of course, you could wrap yourself in knots trying a battery of post-hoc tests after running the ANOVA, but perhaps its better just to use the means parameterization, the estimated confidence intervals, and little common sense to say that humans probably think chocolate tastes better than strawberry or vanilla, but that the latter two or more or less equivalent (we would have guessed this anyway).
 
 ### Checking assumptions
 
@@ -510,21 +515,28 @@ cbind(model.matrix(m), ToothGrowth)
 
 ### Interpreting Models
 
-Now for future work in make guinea pig teeth grow, we may want to know whether the dose and method of supplementation interact in their influence on length.
+For future guinea pig teeth growing, we may want to know whether the dose and method of supplementation interact in their influence on length.
 From a null hypothesis significance testing perspective, we can evaluate the 'significance' of the interaction term as follows: 
 
 ```{r}
 anova(m)
 ```
 
-In this case we found that the interaction was significant, but what does that mean, really? Well it means that if we ran this experiment repeatedly (really, an infinite number of times) and there was no actual interaction, than we would be unlikely to have observed the data *as extreme or more extreme* as the data in our particular experiment (if we used a p-value cutoff of 0.05 than we can be more specific and say that the observed (or more extreme) data would occur in less than 5% of the hypothetical infinite amount of experiments.) In our case the frequentist statistician would say, yes, use the interaction to predict tooth growth in guinea pigs (and use the point estimate generated from your particular observed data set as your best guess for the strength of the interaction).
+In this case we found that the interaction was significant, but what does that mean? 
+It means that if we ran this experiment repeatedly (really, an infinite number of times) and there was no actual interaction, than we would be unlikely to have observed the data *as extreme or more extreme* as the data in our particular experiment. 
+If we used a p-value cutoff of 0.05 than we can be more specific and say that the observed (or more extreme) data would occur in less than 5% of the hypothetical infinite collection of experiments. 
+In our case the frequentist statistician would say, yes, use the interaction to predict tooth growth in guinea pigs, and use the point estimate generated from your particular observed data set as your best guess for the strength of the interaction.
 
-Of course, if our data had been ever so slightly less extreme, such the calculated p-value for the interaction was now 0.06 (or 0.11), our frequentist statistician would say there is no strong evidence for an interaction and that we should not use it to predict tooth length in the future.
+Of course, if our data had been less extreme, such the calculated p-value for the interaction was now 0.06 (or 0.11), our frequentist statistician would say there is insufficient evidence for an interaction and that we should not use it to predict tooth length in the future.
 
-Although this is far from intuitive, it has been widely used (and abused)
+Although this is far from intuitive, it has been widely used (and abused). 
+In chapter 3 we will introduce a more streamlined procedure that 1) does not assume that the effect is zero to begin with 2) does not invoke a hypothetical infinite number of replicated realizations of the data, conditional on one particular parameter value.
 
-An alternative approach would be to use information theoretical to decide whether the interaction is warranted.
-In the past decade following Burnham and Anderson's book on the topic, ecologists have leaned heavily on Akaike's information criterion (AIC), which is a relative measure of model quality (balancing goodness of fit with model complexity). The essential idea behind the use of AIC is that while the interaction may help us predict our observed data better than a model without an interaction, is it really going to help us fit future data well? At one extreme you could imagine a model that has a separate parameter for each observations. Voila, you've fit your model perfectly, but its utter crap when it comes to predicting future values. AIC and similar metric penalize us for adding more parameters than absolutely necessary 
+An alternative approach would be to use information theory to decide whether the interaction is warranted.
+In the past decade following Burnham and Anderson's book on the topic, ecologists have leaned heavily on Akaike's information criterion (AIC), which is a relative measure of model quality (balancing goodness of fit with model complexity). 
+The essential idea behind the use of AIC is that while the interaction may help us explain our observed data better than a model without an interaction, is it really going to help us predict future data well? 
+At one extreme you could imagine a model that has a separate parameter for each observations. 
+Voila, you've fit your model perfectly, but its utter crap when it comes to predicting future values. 
 
 We can compare how the two models we are considering (with and without interaction) compare using AIC:
 ```{r}
@@ -532,11 +544,9 @@ m2 <- lm(len ~ dose + supp, data = ToothGrowth)
 AIC(m, m2)
 ```
 
-Here we see that the original model `m` with interaction has a lower AIC value, and is therefore better supported. Note that AIC is not without its own drawbacks (just how much lower AIC is really *lower*?).
+Here we see that the original model `m` with interaction has a lower AIC value, and is therefore better supported. 
+Note that AIC is not without its own drawbacks (just how much lower AIC is really *lower*?).
 AIC can be considered to be similar to cross validation, approximating the ability of a model to predict future data.
-
-In chapter 3 we will introduce a more streamlined procedure that 1) does not assume that the effect is zero to begin with 2) does not invoke a hypothetical infinite number of replicated realizations of the data, conditional on one particular parameter value.
-
 
 ### Plotting the data
 
@@ -547,7 +557,10 @@ plot(allEffects(m))
 ```
 
 This is less than satisfying, as it does not show any data. 
-All we see is model output (which looks pretty snazzy!), but if the model doesn't actually fit the data well at all (i.e. the model is crap), then the output is meaningless. Ideally we want to be able to juxtapose our observed data with what what we would expect from the model. Fortunately, its possible to plot both the observed data points along with the estimated group means and some indication of uncertainty in our estimates of those means. 
+All we see is model output (which looks pretty snazzy!), but if the model doesn't actually fit the data well at all (i.e. the model is crap), then the output is meaningless. 
+The audience for this plot is robbed of the chance to evaluate model fit because the data are kept secret.
+Ideally we want to be able to juxtapose our observed data with what what we would expect from the model. 
+Fortunately, its possible to plot both the observed data points along with the estimated group means and some indication of uncertainty in our estimates of those means. 
 
 For starters, if we weren't quite so lazy, we could use the `predict` function to obtain confidence intervals for the means of each group. 
 
@@ -560,7 +573,7 @@ predictions <- cbind(g, data.frame(p))
 predictions
 ```
 
-Now we have the model fits plus 95% confidence intervals for predictions (for now let's assume the confidence intervals represent our uncertainty in the estimate of the mean and not what they actually indicate, which is an interval that, if we calculated it for our each of our infinite repetitions of the same experiment, the "true" population mean would fall within the calculated confidence interval 95 times out of 100--what a mouthful!)
+Now we have the model fits plus 95% confidence intervals for predictions (for now let's assume the confidence intervals represent our uncertainty in the estimate of the mean and not what they actually indicate, which is an interval that, if we calculated it for our each of our infinite repetitions of the same experiment, the "true" population mean would fall within the calculated confidence interval 95 times out of 100--what a mouthful!).
 
 We could try to compare these using the table, but lets illustrate them graphically along with the raw data:
 
@@ -577,29 +590,7 @@ ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) +
 This plot is nice because we can observe the data along with the model output. 
 This makes it easier for readers to understand how the model relates to, fits, and does not fit the data.
 If you wish to obscure the data, you could make a bar plot with error pars to represent the standard errors. 
-Although "dynamite" plots are common, we shall not include one here and we strongly recommend that you never produce such a plot ([more here](http://biostat.mc.vanderbilt.edu/wiki/pub/Main/TatsukiRcode/Poster3.pdf)). 
-
-For kicks, lets just look at the predictions (in blue) if we assume the interaction is zero:
-
-```{r, echo = FALSE, fig.cap="Raw data along with confidence intervals for the means of each group when the interaction is assumed to be non-existent"}
-g <- expand.grid(supp = levels(ToothGrowth$supp), 
-                 dose = levels(ToothGrowth$dose))
-p2 <- predict(m2, g, interval = 'confidence', type='response')
-predictions2 <- cbind(g, data.frame(p2))
-ggplot(ToothGrowth, aes(x=interaction(dose, supp), y=len)) + 
-  geom_segment(data=predictions, 
-               aes(y=lwr, yend=upr, 
-                   xend=interaction(dose, supp)), col='red') + 
-geom_segment(data=predictions2, 
-               aes(y=lwr, yend=upr, 
-                   xend=interaction(dose, supp)), col='blue') + 
-  geom_point(data=predictions, aes(y=fit), color='red', size=2, shape=2) +
-  geom_point(data=predictions2, aes(y=fit), color='blue', size=2, shape=2) +  
-  geom_jitter(position = position_jitter(width=.1), shape=1) + 
-  ylab("Length")
-```
-
-So, not that different, but perhaps we are overshooting the 2:OJ and 1:VC categories and undershooting the 1:OJ and 2:VC categories a bit.
+Although "dynamite" plots are common, we shall not include one here and we recommend not using them ([more here](http://biostat.mc.vanderbilt.edu/wiki/pub/Main/TatsukiRcode/Poster3.pdf)). 
 
 ### Interactions between continuous and categorical covariates
 
@@ -609,18 +600,16 @@ Again, this falls under the broad class of models used in analysis of covariance
 Once again, let's simulate some hypothetical data where we have two groups  and a continuous covariate, and the continuous covariate differs for the two groups (note again the use of the design matrix):
 
 ```{r, fig.cap="Simulated interaction between a continuous and categorical covariate."}
+# covariate values
 x1 <- rnorm(n)
 x2 <- factor(sample(c('A', 'B'), n, replace=TRUE))
 
-# generate random intercepts first and second groups
+# random intercepts & slopes
 a <- rnorm(2)
-
-# generate random slopes
 b <- rnorm(2)
 
 sigma <- .4
 
-# the design matrix (note that )
 X <- matrix(c(ifelse(x2 == 'A', 1, 0), 
               ifelse(x2 == 'B', 1, 0), 
               ifelse(x2 == 'A', x1, 0), 
@@ -631,7 +620,8 @@ mu_y <- X %*% c(a, b)
 y <- rnorm(n, mu_y, sigma)
 ```
 
-When we fit an ANCOVA we can assume that the slope of our continuous covariate does not differ between the two groups (and fit only a single predictor that applies to both groups), or we can fit an "interaction" between the continuous and categorical factors, which implicitly tells R to assume that slopes differ and to fit them separately. Let's go ahead and try the latter
+When we fit an ANCOVA we can assume that the slope of our continuous covariate does not differ between the two groups (and fit only a single predictor that applies to both groups), or we can fit an "interaction" between the continuous and categorical factors, which allows the slopes differ among groups and to be estimated separately. 
+Let's go ahead and try the latter
 
 ```{r}
 m <- lm(y ~ x1 + x2 + x1:x2)
@@ -661,4 +651,4 @@ Schielzeth, H. 2010. Simple means to improve the interpretability of regression 
 
 Enqvist, L. 2005. The mistreatment of covariate interaction terms in linear model analyses of behavioural and evolutionary ecology studies. Animal Behaviour 70:967–971.  
 
-Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 3-4.
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 3-4.
