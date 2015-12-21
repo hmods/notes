@@ -109,7 +109,7 @@ traceplot(out)
 
 ```{r, fig.cap="Posterior densities for occupancy and detection probabilities along with their known true values."}
 par(mfrow=c(1, 2))
-post <- extract(out)
+post <- rstan::extract(out)
 plot(density(post$psi), main=expression(psi))
 abline(v=psi, col='red', lwd=2)
 plot(density(post$p), main='p')

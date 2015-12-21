@@ -131,7 +131,7 @@ Let's plot the lines of best fit from the posterior distribution:
 
 ```{r, fig.cap="Raw data along with lines of best fit for the Poisson glm."}
 library(scales)
-post <- extract(out)
+post <- rstan::extract(out)
 plot(x, y)
 n_iter <- length(post$lp__)
 for (i in 1:n_iter){
@@ -200,7 +200,7 @@ summ_d <- d %>%
             lvar=log(var(values)))
 ggplot(summ_d, aes(x=lmean, y=lvar)) + 
   geom_point() + 
-  geom_abline(intecept=0, slope=1, linetype='dashed') + 
+  geom_abline(intercept=0, slope=1, linetype='dashed') + 
   xlab("log mean") + 
   ylab("log variance")
 ```
@@ -233,7 +233,7 @@ traceplot(out)
 Using a posterior predictive check for the variance of $y$:
 
 ```{r, fig.cap="Posterior predictive check for the variance of plot abundance from the single species Poisson glm."}
-post <- extract(out)
+post <- rstan::extract(out)
 
 # simulate new observations and store variances
 y_new <- array(dim=c(n_iter, n))
@@ -307,7 +307,7 @@ traceplot(od_out, pars=c('sigma', 'beta'))
 Using an updated posterior predictive check for the variance of $y$:
 
 ```{r, fig.cap="Updated posterior predictive check for the variance of $y$ with the overdispersed Poisson model."}
-post <- extract(od_out)
+post <- rstan::extract(od_out)
 
 # simulate new observations and store variances
 y_new <- array(dim=c(n_iter, n))
@@ -390,7 +390,7 @@ traceplot(nb_out)
 Conducting our posterior predictive check:
 
 ```{r, fig.cap="Posterior predictive check for the variance in $y$ with the negative binomial likelihood."}
-post <- extract(nb_out)
+post <- rstan::extract(nb_out)
 
 # simulate new observations and store variances
 y_new <- array(dim=c(n_iter, n))

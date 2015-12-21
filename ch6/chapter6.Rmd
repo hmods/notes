@@ -169,7 +169,7 @@ joined$diff <- joined$ft_pct - joined$p_shrink
 ggplot(joined, aes(x=ft_pct, y=p_shrink, color=ft_shot)) + 
   geom_point(shape=1) + 
   scale_color_gradientn(colours=rainbow(4)) +
-  geom_abline(yintercept=0, slope=1, linetype='dashed') +
+  geom_abline(intercept=0, slope=1, linetype='dashed') +
   xlab('Naive MLE') + 
   ylab('Shrunken MLE')
 ```
@@ -178,7 +178,7 @@ ggplot(joined, aes(x=ft_pct, y=p_shrink, color=ft_shot)) +
 # using facets instead of colors
 joined$ft_group <- cut(joined$ft_shot, 9)
 ggplot(joined, aes(x=ft_pct, y=p_shrink)) + 
-  geom_abline(yintercept=0, slope=1, linetype='dashed', alpha=.7) +
+  geom_abline(intercept=0, slope=1, linetype='dashed', alpha=.7) +
   geom_point(shape=1, alpha=.5, size=1) + 
   facet_wrap(~ ft_group) +
   xlab('Naive MLE') + 

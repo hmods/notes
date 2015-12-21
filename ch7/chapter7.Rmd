@@ -310,7 +310,7 @@ We might be interested in whether there is any correlation between egg output an
 To explore this, we can plot the random effects on the link scale:
 
 ```{r, fig.cap="Plot of the posterior medians for the expected number of eggs laid and probability of egg survival for birds that laid eggs."}
-post <- extract(m)
+post <- rstan::extract(m)
 ll_meds <- apply(post$log_lambda, 2, median)
 lp_meds <- apply(post$logit_p, 2, median)
 plot(exp(ll_meds[d$eggs > 0]), plogis(lp_meds), 
@@ -435,7 +435,7 @@ model {
 '
 eta <- 1
 mfit <- stan(model_code = m, iter=10000)
-post <- extract(mfit)
+post <- rstan::extract(mfit)
 par(mfrow=c(2, 2))
 br <- seq(-1, 1, .05)
 hist(post$R[, 1, 2], 
@@ -443,19 +443,19 @@ hist(post$R[, 1, 2],
      main=expression(paste('LKJ prior: ', eta == 1)))
 eta <- 2
 mfit <- stan(model_code = m, iter=10000)
-post <- extract(mfit)
+post <- rstan::extract(mfit)
 hist(post$R[, 1, 2], 
      xlab=expression(rho), freq=FALSE, breaks=br,
      main=expression(paste('LKJ prior: ', eta == 2)))
 eta <- 4
 mfit <- stan(model_code = m, iter=10000)
-post <- extract(mfit)
+post <- rstan::extract(mfit)
 hist(post$R[, 1, 2], 
      xlab=expression(rho), freq=FALSE, breaks=br,
      main=expression(paste('LKJ prior: ', eta == 4)))
 eta <- 20
 mfit <- stan(model_code = m, iter=10000)
-post <- extract(mfit)
+post <- rstan::extract(mfit)
 hist(post$R[, 1, 2], 
      xlab=expression(rho), freq=FALSE, breaks=br,
      main=expression(paste('LKJ prior: ', eta == 20)))
