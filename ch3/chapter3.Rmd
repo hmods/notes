@@ -215,19 +215,25 @@ Unless you're willing to prove that an improper prior leads to a proper posterio
 In reality, most of the time we don't analytically derive posterior distributions. 
 Mostly, we can express our models in specialized programming languages that are designed to make Bayesian inference easier. 
 Here is a Stan model statement from the above example. 
+Stan model statements are best managed as text files with a `.stan` extension. 
+For instance, we could call this `bern.stan`.
 
 ```
 data {
-  int n;
-  int<lower=0, upper=1> y[n];
+  // define the types and names of the data
+  int n; // n is an integer
+  int<lower=0, upper=1> y[n]; // y is an integer vector with n elements
 }
 
 parameters {
-  real<lower=0, upper=1> p;
+  real<lower=0, upper=1> p; // p is a real number between 0 and 1
 }
 
 model {
+  // define priors 
   p ~ beta(1, 1);
+  
+  // define likelihood
   y ~ bernoulli(p);
 }
 ```
@@ -262,28 +268,16 @@ Traceplots show the parameter values that a Markov chain has taken on the y-axis
 For instance, if we run our Stan model from before:
 
 ```{r, message=FALSE, fig.cap="Traceplots that show the sequence of parameter values taken in the Markov chains."}
+# make up some data
 library(rstan)
-m <- '
-data {
-  int n;
-  int<lower=0, upper=1> y[n];
-}
-
-parameters {
-  real<lower=0, upper=1> p;
-}
-
-model {
-  p ~ beta(1, 1);
-  y ~ bernoulli(p);
-}
-'
-
 y <- c(1, 1, 0, 0, 0, 0, 0, 0)
 n <- length(y)
 
-out <- stan(model_code=m)
-traceplot(out, inc_warmup=TRUE)
+# bundle into a list
+stan_d <- list(y = y, n = n)
+
+out <- stan('bern.stan', data = stan_d)
+traceplot(out, pars = c('p', 'lp__'), inc_warmup=TRUE)
 ```
 
 This traceplot is useful for verifying convergence: all of the chains appear to be sampling from the same region. 
@@ -393,7 +387,7 @@ And finally, let's extract our samples from the posterior and plot our estimated
 
 ```{r, fig.cap="Raw data along with the posterior distribution of regression lines. Each draw from the posterior is shown as a line. Collectively, these lines represent the most probable regression lines conditional on the data."}
 library(scales)
-post <- extract(out)
+post <- rstan::extract(out)
 
 # draw points
 plot(x, y)
@@ -414,7 +408,8 @@ One way **not** to think of it is asking what the probability is that the slope 
 If we think of a posterior probability density of our slope, then the true probability of any one particular value is zero because this is a probability density function, not a probability mass function (this is true for $\beta=0$ and for $\beta = .0112351351$, for instance). 
 
 ```{r, fig.cap="Density plot of the posterior distribution of the slope."}
-plot(density(post$beta[, 2]))
+plot(density(post$beta[, 2]), 
+     main=expression(paste('Posterior density of ', beta)))
 ```
 
 A better question (answerable with a probability density function) might be: given the data, what is the probability that $x$ has a positive effect on $y$?
