@@ -175,7 +175,9 @@ This is because our estimate for $\alpha$ is the y-intercept of the estimated re
 If you need convincing, recall that $y_i = \alpha + \beta x_i + \epsilon_i$. If you substitue 0 in for $x$, the equation for why collapses down to $y_i = \alpha + \epsilon_i$, which is the original "model of the mean".
 
 The estimate for $\beta$ is called "x", because it is a coefficient associated with the variable "x" in this model. 
-This parameter is often referred to as the "slope", because it represents the increase in the expected value of $y$ for a one unit increase in $x$ (the rise in y over run in x). Keep in mind, though, that $lm$ does not care about the actual distribution of $x$ you give it. The values of $x$ could be all zeros and ones (or all -3.4 or 2.5) and lm would treat $x$ the same way.
+This parameter is often referred to as the "slope", because it represents the increase in the expected value of $y$ for a one unit increase in $x$ (the rise in y over run in x). 
+Keep in mind, though, that `lm` does not care about the actual distribution of $x$ you give it, so long as it is numeric. 
+The values of $x$ could be all zeros and ones (or all -3.4 or 2.5) and lm would treat $x$ the same way.
 
 Point estimates for the standard deviation and variance of $\epsilon$ can be extracted as before (`summary(m)$sigma` and `summary(m)$sigma^2`).
 
@@ -217,8 +219,7 @@ confint(m, level = 0.95)
 
 However, these univariate confidence intervals are somewhat misleading because, as we shall see, our estimates for these parameters are correlated. 
 For any given value of the intercept, there are only certain values of the slope within the univariate confidence interval that are actually supported.
-To assess this possibility, consider the bivariate confidence ellipse for these two parameters. 
-We can evaluate this quantity graphically as follows with some help from the `car` package:
+To assess this possibility, we can plot a bivariate confidence ellipse for these two parameters with some help from the `car` package:
 
 ```{r, fig.cap="The bivariate confidence region for the slope and intercept. Correlation implies that for any particular value of alpha or beta, only a small subset of the values of the other parameter are supported. This information is not available by considering the univariate confidence intervals alone."}
 library(car)
@@ -248,7 +249,7 @@ This trick helps with interpretation, but it will also prove useful later in the
 ### Scaling covariates
 
 It is usually also useful to scale covariates. There are two reasons for scaling covariates. 
-First, if values of X are extremely small (e.g. $10^-6$) or extremely large (e.g. $10^6$ or greater) then it doesn't make sense to think about changes of 1 $x$ unit. 
+First, if values of X are extremely small (e.g. $10^{-6}$) or extremely large (e.g. $10^6$ or greater) then it doesn't make sense to think about changes of 1 $x$ unit. 
 For example, if x is a distance measurement where all the values are on the scale of 1000km, the $\beta$ value for a change in 1 kilometer may not be helpful. 
 If we scale the covariate by dividing by 1000, then the $\beta$ estimate now gives the change in $y$ for every 1000km -- much more useful!
 
@@ -601,10 +602,12 @@ Once again, let's simulate some hypothetical data where we have two groups  and 
 
 ```{r, fig.cap="Simulated interaction between a continuous and categorical covariate."}
 # covariate values
+n <- 100
 x1 <- rnorm(n)
 x2 <- factor(sample(c('A', 'B'), n, replace=TRUE))
 
 # random intercepts & slopes
+set.seed(12903)
 a <- rnorm(2)
 b <- rnorm(2)
 
