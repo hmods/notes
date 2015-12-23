@@ -103,7 +103,7 @@ for (i in 1:nrow(g)){
 library(ggplot2)
 ggplot(g, aes(x = mu, y = sigma)) + 
   geom_tile(aes(fill = loglik)) + 
-  stat_contour(aes(z = loglik), bins=40) + 
+  stat_contour(aes(z = loglik), bins=40, color='black') + 
   scale_fill_gradient(low="white", high="red")
 ```
 
