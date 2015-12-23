@@ -7,7 +7,6 @@ Everything that we've done so far in this course has laid a foundation to unders
 
 #### Learning goals
 
-- varying intercepts (NBA freethrow example) with `Stan`
 - Bayesian vs. MLE approaches
 - binomial-Poisson hierarchy (e.g. # eggs laid & survival)
 - non-centered parameterizations
@@ -230,7 +229,7 @@ model {
 
 Fitting the new model:
 
-```{r, results='hide'}
+```{r, message=FALSE, results='hide'}
 m <- stan('egg_ranef.stan', data=stan_d, 
           pars=c('mu_lambda', 'mu_p', 'sigma_lambda', 'sigma_p', 'lp__'))
 ```
