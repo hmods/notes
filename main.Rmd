@@ -1,6 +1,7 @@
 ---
 title: "Hierarchical modeling course notes"
 date: "December 13, 2015"
+fontsize: 12pt
 output:
   pdf_document:
     includes: 
@@ -8,7 +9,6 @@ output:
     fig_caption: yes
     toc: yes
     toc_depth: 3
-fontsize: 7pt
 ---
 
 ```{r, echo=FALSE, results='hide', message=FALSE}
@@ -18,10 +18,11 @@ rstan_options(auto_write = TRUE)
 
 # Preface
 
-This document was made to complement a graduate level course in hierarchical Bayesian models for biology graduate students who have some familiarity with R and statistics. 
+This document was made to complement a graduate level course in hierarchical Bayesian models for biology graduate students who have some familiarity with R, at least a few fragments of memories from high school algebra, and a bit of previous experience with basic statistics. 
 While there are many great textbooks out there to go along with such a class, it seemed potentially useful to compile some concise notes with the code and concepts together.
 These notes are intended to be used along with other resources, which are listed at the end of each chapter. 
-Many people have contributed to the development of these notes including Max Joseph, Will Stutz, Tim Szewczyk, Helen McCreery, Topher Weiss-Lehman, Lauren Shoemaker, and Piet Johnson.
+In particular, we recommend using these notes with Gelman and Hill *Data analysis using regression and multilevel/hierarchical models*, which is written for applied scientists. 
+Many people have contributed to the development of these notes including Max Joseph, Will Stutz, Tim Szewczyk, Helen McCreery, Topher Weiss-Lehman, Lauren Shoemaker, and Piet Johnson. 
 All source code to compile this document is available on GitHub at [https://github.com/hmods/notes](https://github.com/hmods/notes), where you can also open issues or pull requests related to this document. 
 
 \newpage
