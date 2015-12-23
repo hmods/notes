@@ -406,10 +406,7 @@ In the model of the mean, $X$ is an $n$ by $1$ matrix, with each element equal t
 With linear regression, $X$'s first column is all ones (corresponding to the intercept parameter), and the second column contains the values of the covariate $x$. 
 In ANOVA, the design matrix $X$ will differ between the means and effects parameterizations. 
 With a means parameterization, the entries in column $j$ will equal one if observation (row) $i$ is in group $j$, and entries are zero otherwise. 
-If you are not comfortable with matrix multiplication, it's worth investing some effort so that you can understand why $X\beta$ is such a powerful construct. 
-
->Can you figure out the structure of $X$ with R's default effects parameterization?
->You can check your work with `model.matrix(m)`, where `m` is a model that you've fitted with `lm`.
+If you have been out of high school or practice for a while and don't remember how to do matrix multiplication, it's worth investing some effort so that you can understand why $X\beta$ is such a powerful construct and there are a lot of good resources online to check out. 
 
 ## Interactions between covariates
 
