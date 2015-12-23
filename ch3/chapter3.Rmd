@@ -7,7 +7,7 @@ In recent decades Bayesian inference has increasingly been used in ecology.
 A key difference between Bayesian and maximum likelihood approaches lies in which quantities are treated as random variables. 
 For any likelihood function, the parameters $\theta$ are not random variables because there are no probability distributions associated with $\theta$. 
 In contrast, Bayesian approaches treat parameters and future data (actually all unobserved quantities) as random variables, meaning that each unknown is associated with a probability distribution $p(\theta)$.
-In both Bayesian and maximum likelihood approaches, the observations $y$ are treated as a random variable, and the probability distribution for this random variable $p(y \mid \theta)$ plays a central role in both approaches. 
+In both Bayesian and maximum likelihood approaches, the probability distribution for observed data conditional on parameters $p(y \mid \theta)$ plays a central role. 
 See Hobbs and Hooten (Ch. 5) for a more detailed treatment on differences between Bayesian and maximum likelihood based inferential approaches.
 Some authors also point out differences between Bayesian and frequentist definitions of probability. 
 In a frequentist framework, probabilities are defined in term of long run frequencies of events, often relying on hypothetical realizations. 
@@ -96,11 +96,11 @@ If we have $n$ independent Bernoulli random variables, $y_1, ..., y_n$, each wit
 
 $$[y_1, ..., y_n \mid p] = p^{y_1} (1-p)^{1 - y_1} ... p^{y_n} (1 - p)^{1 - y_n}$$
 
-$$[\pmb{y} \mid p] = \prod_{i = 1}^{n} p^{y_i} (1 - p)^{1 - y_1}$$
+$$[y \mid p] = \prod_{i = 1}^{n} p^{y_i} (1 - p)^{1 - y_1}$$
 
 Recalling from algebra that $x^a x^b = x^{a + b}$, this implies:
 
-$$[\pmb{y} \mid p] = p^{\sum_i y_i} (1 - p)^{n - \sum_i y_i}$$
+$$[y \mid p] = p^{\sum_i y_i} (1 - p)^{n - \sum_i y_i}$$
 
 Having obtained the likelihood, we now must specify a prior to complete our specification of the joint distribution of data and parameters $[y \mid p][p]$, the numerator in Bayes' theorem. 
 A natural choice is the Beta distribution, which has two parameters $\alpha$ and $\beta$, with support on the interval $(0, 1)$. 
