@@ -19,7 +19,7 @@ We can obtain maximum likelihood estimates (MLEs) in a few ways: analytically, w
 - conditional independence assumptions
 
 ## What is likelihood?
-
+test
 The likelihood function represents the probability of the data $y$, conditioned on the parameter(s) $\theta$.
 Mathematically, the likelihood is $p(y|\theta) = \mathcal{L}(\theta | y)$, where $y$ is a (possibly) vector-valued sample of observations from the random variable $Y = (Y_1, Y_2, ..., Y_n)$. 
 More casually, the likelihood function tells us the probability of observing the sample that we did under different values of the parameter(s) $\theta$.
