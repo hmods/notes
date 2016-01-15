@@ -19,7 +19,7 @@ We can obtain maximum likelihood estimates (MLEs) in a few ways: analytically, w
 - conditional independence assumptions
 
 ## What is likelihood?
-test
+
 The likelihood function represents the probability of the data $y$, conditioned on the parameter(s) $\theta$.
 Mathematically, the likelihood is $p(y|\theta) = \mathcal{L}(\theta | y)$, where $y$ is a (possibly) vector-valued sample of observations from the random variable $Y = (Y_1, Y_2, ..., Y_n)$. 
 More casually, the likelihood function tells us the probability of observing the sample that we did under different values of the parameter(s) $\theta$.
@@ -63,7 +63,7 @@ In this class, we won't worry about analytically deriving MLEs in this class, bu
 
 So, we've established that the likelihood is: $p(y | \theta) = \prod_{i=1}^n p(y_i | \theta)$. 
 Computationally, this is challenging because we are working with very small numbers (products of small numbers) - so small that computers have a hard time keeping track of them with much precision. 
-Usually the likelihood function is more tractable on a log scale, and summing logs of small numbers is more computationally stable than multiplying many small numbers together. .
+Usually the likelihood function is more tractable on a log scale, and summing logs of small numbers is more computationally stable than multiplying many small numbers together.
 Any parameter(s) $\theta$ that maximize the likelihood will also maximize the log-likelihood and vice versa, because the log function is strictly increasing. 
 So, let's instead work with the log likelihood by taking the log of both sides of the previous equation. 
 
@@ -111,7 +111,7 @@ This is a contour plot of the log-likelihood surface.
 The black lines are log-likelihood isoclines, corresponding to particular values of the log-likelihood.
 We might also inspect univariate likelihood profiles for the parameters:
 
-```{r, fig.cap="Univariate likelihood profiles."}
+```{r, fig.cap="Univariate likelihood profiles.", message=FALSE}
 library(tidyr)
 g %>%
   gather(parameter, value, -loglik) %>% 
@@ -224,13 +224,13 @@ This concept will show up again later in the context of Markov chain Monte Carlo
 
 Analytic, direct search, and optimization approaches for maximum likelihood estimation can all be useful, but in this class we will rarely make use of direct search and optimization. 
 However, the likelihood function and maximum likelihood estimation will continue to play a central role, as it is involved in the estimation of parameters in Bayesian inference. 
-In a Bayesian context, the likelihood provides the key link between observed data and unknown parameters, but we provide additional probabilistic structure for the parameters in the form of prior distributions for the unknown parameters. 
+In a Bayesian context, the likelihood provides the key link between observed data and unknown parameters, but we provide additional model structure in the form of prior probability distributions for the unknown parameters. 
 The key philosophical difference however remains in the consideration of the data vs. the parameters as fixed vs. unknown quantities.
 
 ## Further reading
 
+Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 18.
+
 Casella and Berger. 2002. *Statistical Inference*, Chapter 7.
 
 Scholz FW. 2004. Maximum likelihood estimation, in *Encyclopedia of Statistical Sciences*.
-
-Gelman and Hill. 2009. *Data analysis using regression and multilevel/hierarchical models*. Chapter 18.
