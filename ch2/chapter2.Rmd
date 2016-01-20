@@ -3,82 +3,87 @@ Chapter 2: Maximum likelihood estimation
 
 ## Big picture
 
-The likelihood is defined as the probability of the data, conditional on some parameter(s). 
-Having observed some data, we often want to know which particular parameter values maximize the probability of those data. 
-These parameter values are referred to as the maximum likelihood estimates. 
+The likelihood is defined as the probability of the data, conditional on some parameter(s).
+Having observed some data, we often want to know which particular parameter values maximize the probability of those data.
+These parameter values are referred to as the maximum likelihood estimates.
 
-The goal here is to connect the notion of a likelihood to probability distributions and models. 
+The goal here is to connect the notion of a likelihood to probability distributions and models.
 We can obtain maximum likelihood estimates (MLEs) in a few ways: analytically, with brute force (direct search), and via optimization (e.g., the `optim` function).
 
 #### Learning goals
 
 - definition of likelihood
 - single parameter models: obtaining a MLE with `optim`
-- model of the mean with unknown variance 
+- model of the mean with unknown variance
 - fitting simple linear models with likelihood
 - conditional independence assumptions
 
 ## What is likelihood?
 
 The likelihood function represents the probability of the data $y$, conditioned on the parameter(s) $\theta$.
-Mathematically, the likelihood is $p(y|\theta) = \mathcal{L}(\theta | y)$, where $y$ is a (possibly) vector-valued sample of observations from the random variable $Y = (Y_1, Y_2, ..., Y_n)$. 
+Mathematically, the likelihood is $p(y|\theta) = \mathcal{L}(\theta | y)$, where $y$ is a (possibly) vector-valued sample of observations from the random variable $Y = (Y_1, Y_2, ..., Y_n)$.
 More casually, the likelihood function tells us the probability of observing the sample that we did under different values of the parameter(s) $\theta$.
 It is important to recognize that $\theta$ is not treated as a random variable in the likelihood function (the data are treated as random variables).
-The likelihood is not the probability of $\theta$ conditional on the data $y$; $p(y | \theta) \neq p(\theta | y)$. 
+The likelihood is not the probability of $\theta$ conditional on the data $y$; $p(y | \theta) \neq p(\theta | y)$.
 To calculate $p(\theta | y)$, we'll need to invert the above logic, and we can do so later with Bayes' theorem (also known as the law of inverse probability).
 
 ### Joint probabilities of independent events
 
-You may recall that if we have two events $A$ and $B$, and we want to know the joint probability that both events $A$ and $B$ occur, we can generally obtain the joint probability as: $P(A, B) = P(A|B)P(B)$ or $P(A, B) = P(B|A)P(A)$. 
-However, if the events $A$ and $B$ are independent, then $P(A|B) = P(A)$ and $P(B|A) = P(B)$. 
-In other words, having observed that one event has happened, the probability of the other event is unchanged. 
-In this case, we obtain the joint probability of two independent events as $P(A, B)=P(A)P(B)$. 
+You may recall that if we have two events $A$ and $B$, and we want to know the joint probability that both events $A$ and $B$ occur, we can generally obtain the joint probability as: $P(A, B) = P(A|B)P(B)$ or $P(A, B) = P(B|A)P(A)$.
+However, if the events $A$ and $B$ are independent, then $P(A|B) = P(A)$ and $P(B|A) = P(B)$.
+In other words, having observed that one event has happened, the probability of the other event is unchanged.
+In this case, we obtain the joint probability of two independent events as $P(A, B)=P(A)P(B)$.
 This logic extends to more than two independent events: $P(E_1, E_2, ..., E_n) = \prod_{i=1}^{n} P(E_i)$, where $E_i$ is the $i^{th}$ event.
 
-Why does this matter? 
+Why does this matter?
 Recall the independence assumption that we made in the construction of our linear models in the previous chapters: the error terms $\epsilon_i \sim N(0, \sigma^2)$, or equivalently the conditional distribution of y values ($[y_i | \beta, \sigma^2]$) are independent from one another.
 Here the square brackets are used as a more compact version of probability notation, we could have also written $P(Y_i = y_i | \beta, \sigma^2)$, the probability that the random variable $Y_i$ equals a particular value $y_i$ conditional on the parameters.
-The residual error term of observation $i$ tells us nothing about the error term for $j$ for all pairs of $i$ and $j$, and conditional on a particular $\beta$ and $\sigma^2$, $y_i$ tells us nothing about $y_j$. 
+The residual error term of observation $i$ tells us nothing about the error term for $j$ for all pairs of $i$ and $j$, and conditional on a particular $\beta$ and $\sigma^2$, $y_i$ tells us nothing about $y_j$.
 If we assume that our observations are conditionally independent (conditioning on our parameter vector $\theta = (\beta, \sigma^2)$), then we can simply multiply all of the point-wise likelihoods together to find the joint probability of our sample $y$ conditional on the parameters (the likelihood of our sample):
 
 $$p(y_1, y_2, ..., y_n |\theta) = p(y_1 | \theta) p(y_2 | \theta) ... p(y_n | \theta)$$
 $$p(y | \theta) = \prod_{i=1}^{n} p(y_i | \theta)$$
 $$\mathcal{L}(\theta | y) = \prod_{i=1}^{n} p(y_i | \theta)$$
 
-If the observations $y_1, ..., y_n$ are not conditionally independent (or if you like, if the error terms are not independent), then a likelihood function that multiplies the point-wise probabilities together as if they are independent events is no longer valid. 
-This is the problem underlying many discussions of non-independence, psuedoreplication, and autocorrelation (spatial, temporal, phylogenetic). 
+If the observations $y_1, ..., y_n$ are not conditionally independent (or if you like, if the error terms are not independent), then a likelihood function that multiplies the point-wise probabilities together as if they are independent events is no longer valid.
+This is the problem underlying many discussions of non-independence, psuedoreplication, and autocorrelation (spatial, temporal, phylogenetic).
 All of these lead to violations of this independence assumption, meaning that it is not correct to work with the product of all the point-wise likelihoods unless terms are added to the model (e.g., blocking factors, autoregressive terms, spatial random effects) so that the observations are conditionally indepenent.
 
 ## Obtaining maximum likelihood estimates
 
-We have already obtained quite a few maximum likelihood estimates (MLEs) in the previous chapter with the `lm()` function. 
+In the previous chapter we estimated the parameters of linear model using the `lm()` function in R, which uses ordinary least-squares (OLS) regression.
+That is, it uses built-in algorithms to provide the parameter estimates that minimize the sum of the squared residuals of the observed data from the fitted regression line.
+Technically, this is not maximum likelihood estimation, though when the assumptions of normally distributed errors are met, the OLS and maximum likelihood estimates will be the same.
+In addition, the confidence intervals for OLS parameter estimates (the measure of uncertainty) provided by `confint()` and `lm()` are approximations based on t-distributions.
+We'll find that measures of uncertainty are calculated differently for maximum likelihood and Bayesian parameter estimation.
+
 Here, we provide a more general treatment of estimation.
 
-Assuming that we have a valid likelihood function $\mathcal{L}(\theta | y)$, we often want to find the parameter values that maximize the probability of observing our sample $y$. 
-We can proceed analytically, by direct search, and by optimization. 
+Assuming that we have a valid likelihood function $\mathcal{L}(\theta | y)$, we often want to find the parameter values that maximize the probability of observing our sample $y$.
+We can proceed analytically, by direct search, and by optimization.
 Mathematically, we might refer to a maximum likelihood estimate as the value of $\theta$ that maximizes $p(y | \theta)$.
-Recalling some calculus, it is reasonable to think that we might attempt to differentiate $p(y | \theta)$ with respect to $\theta$, and find the points at which the derivative equal zero to identify candidate maxima. 
-The first derivative will be zero at a maximum, but also at any minima or inflection points, so in practice first-order differentiation alone is not sufficient to identify MLEs. 
-In this class, we won't worry about analytically deriving MLEs in this class, but interested parties may look into Casella and Berger's 2002 book *Statistical Inference*. 
+Recalling some calculus, it is reasonable to think that we might attempt to differentiate $p(y | \theta)$ with respect to $\theta$, and find the points at which the derivative equal zero to identify candidate maxima.
+The first derivative will be zero at a maximum, but also at any minima or inflection points, so in practice first-order differentiation alone is not sufficient to identify MLEs.
+In this class, we won't worry about analytically deriving MLEs in this class, but interested parties may look into Casella and Berger's 2002 book *Statistical Inference*.
 
-So, we've established that the likelihood is: $p(y | \theta) = \prod_{i=1}^n p(y_i | \theta)$. 
-Computationally, this is challenging because we are working with very small numbers (products of small numbers) - so small that computers have a hard time keeping track of them with much precision. 
+So, we've established that the likelihood is: $p(y | \theta) = \prod_{i=1}^n p(y_i | \theta)$.
+Computationally, this is challenging because we are working with very small numbers (products of small numbers) - so small that computers have a hard time keeping track of them with much precision.
 Usually the likelihood function is more tractable on a log scale, and summing logs of small numbers is more computationally stable than multiplying many small numbers together.
-Any parameter(s) $\theta$ that maximize the likelihood will also maximize the log-likelihood and vice versa, because the log function is strictly increasing. 
-So, let's instead work with the log likelihood by taking the log of both sides of the previous equation. 
+Any parameter(s) $\theta$ that maximize the likelihood will also maximize the log-likelihood and vice versa, because the log function is strictly increasing.
+So, let's instead work with the log likelihood by taking the log of both sides of the previous equation.
 
 $$log(p(y|\theta)) = log \big(\prod_{i=1}^n p(y_i | \theta) \big)$$
 
-Because $log(ab) = log(a) + log(b)$, we can sum up the log likelihoods on the right side of the equation: 
+Because $log(ab) = log(a) + log(b)$, we can sum up the log likelihoods on the right side of the equation:
 
 $$log(p(y|\theta)) = \sum_{i=1}^n log(p(y_i | \theta))$$
 
 ### Direct search
 
-Here we'll illustrate two methods to find MLEs for normal models: direct search and optimization. 
-Returning to our simplest normal model (the model of the mean), we have two parameters: $\theta = (\mu, \sigma^2)$ and $y \sim N(\mu, \sigma^2)$. 
-As an aside, maximizing the likelihood is equivalent to minimizing the sum of squared error with the normal distribution. 
-Below, we simulate a small dataset with known parameters, and then use a direct search over a bivariate grid of parameters ($\mu$ and $\sigma$). 
+Here we'll illustrate two methods to find MLEs for normal models: direct search and optimization.
+Returning to our simplest normal model (the model of the mean), we have two parameters: $\theta = (\mu, \sigma^2)$ and $y \sim N(\mu, \sigma^2)$.
+Below, we simulate a small dataset with known parameters, and then use a direct search over a bivariate grid of parameters ($\mu$ and $\sigma$).
+(Note the use of the `dnorm()` function to calculate the log-likelihoods given a particular normal distribution defined by mu and sigma).
 
 ```{r, message=FALSE, fig.cap="Contour plot for the log-likelihood surface across a 2d grid of parameter space."}
 # set parameters
@@ -90,7 +95,7 @@ n <- 200
 y <- rnorm(n, mu, sigma)
 
 # generate a grid of parameter values to search over
-g <- expand.grid(mu = seq(4, 8, length.out=100), 
+g <- expand.grid(mu = seq(4, 8, length.out=100),
                  sigma=seq(2, 7, length.out=100))
 
 # evaluate the log-likelihood of the data for each parameter combination
@@ -101,29 +106,29 @@ for (i in 1:nrow(g)){
 
 # plot results
 library(ggplot2)
-ggplot(g, aes(x = mu, y = sigma)) + 
-  geom_tile(aes(fill = loglik)) + 
-  stat_contour(aes(z = loglik), bins=40, color='black') + 
+ggplot(g, aes(x = mu, y = sigma)) +
+  geom_tile(aes(fill = loglik)) +
+  stat_contour(aes(z = loglik), bins=40, color='black') +
   scale_fill_gradient(low="white", high="red")
 ```
 
-This is a contour plot of the log-likelihood surface. 
+This is a contour plot of the log-likelihood surface.
 The black lines are log-likelihood isoclines, corresponding to particular values of the log-likelihood.
 We might also inspect univariate likelihood profiles for the parameters:
 
 ```{r, fig.cap="Univariate likelihood profiles.", message=FALSE}
 library(tidyr)
 g %>%
-  gather(parameter, value, -loglik) %>% 
-  ggplot(aes(x=value, y=loglik)) + 
-    geom_point(shape=1, alpha=.1) + 
-    facet_wrap(~ parameter, scales='free') + 
-    xlab('Parameter value') + 
+  gather(parameter, value, -loglik) %>%
+  ggplot(aes(x=value, y=loglik)) +
+    geom_point(shape=1, alpha=.1) +
+    facet_wrap(~ parameter, scales='free') +
+    xlab('Parameter value') +
     ylab('Log-likelihood')
 ```
 
-If we are lucky, there is only one global maximum on the surface (this can be assessed analytically), and we've found it. 
-If we are unlucky, there are multiple maxima (some local, perhaps one global), and we have identified one of these maxima, but we don't know whether it's the global maximum or a local maximum. 
+If we are lucky, there is only one global maximum on the surface (this can be assessed analytically), and we've found it.
+If we are unlucky, there are multiple maxima (some local, perhaps one global), and we have identified one of these maxima, but we don't know whether it's the global maximum or a local maximum.
 In this case, we know based on analytical results (the second derivative of the log-likelihood function) that there is only one maximum.
 Here our best estimate for our parameters $\theta = (\mu, \sigma^2)$ will be the pair of parameters that has the greatest log-likelihood:
 
@@ -135,25 +140,25 @@ MLE_dsearch
 
 ### Optimization
 
-Finding maxima and minima of functions is a common operation, and there are many algorithms that have been developed to accomplish these tasks. 
-Some of these algorithms are included in the base R function `optim()`. 
+Finding maxima and minima of functions is a common operation, and there are many algorithms that have been developed to accomplish these tasks.
+Some of these algorithms are included in the base R function `optim()`.
 
-Optimization routines have an easier time optimizing in unconstrained space, where parameters can be anywhere between $-\infty$ and $\infty$. 
-However, we are trying to optimize a parameter that must be positive, $\sigma$. 
+Optimization routines have an easier time optimizing in unconstrained space, where parameters can be anywhere between $-\infty$ and $\infty$.
+However, we are trying to optimize a parameter that must be positive, $\sigma$.
 We can transform $\sigma$ so that we can optimize over unconstrained space: `log` maps sigma from its constrained space $(0, \infty)$ to unconstrained space $(-\infty, \infty)$, and the `exp` function maps from the unconstrained space back to the constrained space (and the scale of the parameter).
-This trick shows up later in the context of link-functions for generalized linear models, where we transform a constrained linear predictor to unconstrained space while estimating parameters. 
+This trick shows up later in the context of link-functions for generalized linear models, where we transform a constrained linear predictor to unconstrained space while estimating parameters.
 
-By convention, `optim` will minimize functions, but we want to maximize the likelihood. 
-If we multiply our log-likelihood function by $-1$, then we will have the negative log-likelihood function, which we can minimize to find the maximum likelihood function. 
-If we find the minimum of the negative log-likelihood, then we have found the MLE. 
-We need to provide some initial values for the parameters and a function to minimize. 
+By convention, `optim` will minimize functions, but we want to maximize the likelihood.
+If we multiply our log-likelihood function by $-1$, then we will have the negative log-likelihood function, which we can minimize to find the maximum likelihood function.
+If we find the minimum of the negative log-likelihood, then we have found the MLE.
+We need to provide some initial values for the parameters and a function to minimize.
 
 ```{r}
 # a negative log-likelihood function
 nll <- function(theta, y){
   # unpack the parameter vector theta
   mu <- theta[1]
-  sigma <- exp(theta[2]) 
+  sigma <- exp(theta[2])
 
   # return the negative log likelihood
   -sum(dnorm(y, mu, sigma, log=TRUE))
@@ -168,15 +173,15 @@ res
 ```
 
 If the algorithm has converged (check to see if `res$convergence` is zero), and if there is only one minimum in the negative log-likelihood surface (we know this is true in this case), then we have identified the MLEs of $\mu$ and $ln(\sigma)$.
-How do these estimates compare to our first estimates found via direct search? 
+How do these estimates compare to our first estimates found via direct search?
 
 ```{r, warnings=FALSE}
 MLE_optim <- c(res$par[1], exp(res$par[2]))
-rbind(unlist(MLE_dsearch[c('mu', 'sigma')]), 
+rbind(unlist(MLE_dsearch[c('mu', 'sigma')]),
       unlist(MLE_optim))
 ```
 
-This approach is quite general, and can be modified to be used for instance in a linear regression context: 
+This approach is quite general, and can be modified to be used for instance in a linear regression context:
 
 ```{r}
 n <- 20
@@ -187,7 +192,7 @@ nll <- function(theta, y, x){
   # unpack params
   alpha <- theta[1]
   beta <- theta[2]
-  sigma <- exp(theta[3]) 
+  sigma <- exp(theta[3])
   mu <- alpha + beta * x
   # return nll
   -sum(dnorm(y, mu, sigma, log=TRUE))
@@ -203,8 +208,8 @@ res <- optim(theta_init, nll, y = y, x = x)
 Next we can plot the line of best fit that minimized the negative log likelihood of our data.
 
 ```{r, fig.cap="Raw data and line of best fit from a linear regression that used `optim` to find the maximum likelihood estimates."}
-plot(x, y)
-abline(a = res$par['alpha'], b = res$par['beta'])
+qplot(x,y) +
+  geom_abline(intercept = res$par['alpha'], slope = res$par['beta'])
 ```
 
 We may wish to evaluate the output from `optim` so that we can see the maximum likelihood estimates:
@@ -213,18 +218,18 @@ We may wish to evaluate the output from `optim` so that we can see the maximum l
 res
 ```
 
-We should note that `optim` can fail in many ways. 
-For instance, it may fail to find a minimum value. 
-If `res$convergence` is not equal to zero, then the algorithm has not converged at all. 
-See the help file for optim for details (`?optim`), but there are specific convergence codes to indicate that the maximum number of iterations in the algorithm has been reached, that the optimization routine has become "degenerate" in some way, and so on. 
-Worse, there may be multiple minima and it may converge to a local minimum, but not *the* global minimum. 
+We should note that `optim` can fail in many ways.
+For instance, it may fail to find a minimum value.
+If `res$convergence` is not equal to zero, then the algorithm has not converged at all.
+See the help file for optim for details (`?optim`), but there are specific convergence codes to indicate that the maximum number of iterations in the algorithm has been reached, that the optimization routine has become "degenerate" in some way, and so on.
+Worse, there may be multiple minima and it may converge to a local minimum, but not *the* global minimum.
 Unfortunately there are no warning or error messages for this.
 It is a good idea to experiment with different starting values for the parameters so that you can more reliably find the global minimum (if it exists).
 This concept will show up again later in the context of Markov chain Monte Carlo methods, where we are trying to characterize a probability surface.
 
-Analytic, direct search, and optimization approaches for maximum likelihood estimation can all be useful, but in this class we will rarely make use of direct search and optimization. 
-However, the likelihood function and maximum likelihood estimation will continue to play a central role, as it is involved in the estimation of parameters in Bayesian inference. 
-In a Bayesian context, the likelihood provides the key link between observed data and unknown parameters, but we provide additional model structure in the form of prior probability distributions for the unknown parameters. 
+Analytic, direct search, and optimization approaches for maximum likelihood estimation can all be useful, but in this class we will rarely make use of direct search and optimization.
+However, the likelihood function and maximum likelihood estimation will continue to play a central role, as it is involved in the estimation of parameters in Bayesian inference.
+In a Bayesian context, the likelihood provides the key link between observed data and unknown parameters, but we provide additional model structure in the form of prior probability distributions for the unknown parameters.
 The key philosophical difference however remains in the consideration of the data vs. the parameters as fixed vs. unknown quantities.
 
 ## Further reading
