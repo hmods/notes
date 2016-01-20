@@ -53,10 +53,7 @@ All of these lead to violations of this independence assumption, meaning that it
 
 In the previous chapter we estimated the parameters of linear model using the `lm()` function in R, which uses ordinary least-squares (OLS) regression.
 That is, it uses built-in algorithms to provide the parameter estimates that minimize the sum of the squared residuals of the observed data from the fitted regression line.
-Technically, this is not maximum likelihood estimation, though when the assumptions of normally distributed errors are met, the OLS and maximum likelihood estimates will be the same.
-In addition, the confidence intervals for OLS parameter estimates (the measure of uncertainty) provided by `confint()` and `lm()` are approximations based on t-distributions.
-We'll find that measures of uncertainty are calculated differently for maximum likelihood and Bayesian parameter estimation.
-
+Technically, this is not maximum likelihood estimation, though when the assumptions of normally distributed errors are met, the OLS and maximum likelihood estimates will be the same (specifically, the MLEs for the model coefficients are obtained by minimizing the sum of squared residual terms!).
 Here, we provide a more general treatment of estimation.
 
 Assuming that we have a valid likelihood function $\mathcal{L}(\theta | y)$, we often want to find the parameter values that maximize the probability of observing our sample $y$.
@@ -83,7 +80,8 @@ $$log(p(y|\theta)) = \sum_{i=1}^n log(p(y_i | \theta))$$
 Here we'll illustrate two methods to find MLEs for normal models: direct search and optimization.
 Returning to our simplest normal model (the model of the mean), we have two parameters: $\theta = (\mu, \sigma^2)$ and $y \sim N(\mu, \sigma^2)$.
 Below, we simulate a small dataset with known parameters, and then use a direct search over a bivariate grid of parameters ($\mu$ and $\sigma$).
-(Note the use of the `dnorm()` function to calculate the log-likelihoods given a particular normal distribution defined by mu and sigma).
+Note the use of the `dnorm()` function to calculate the log-likelihoods given a particular normal distribution defined by mu and sigma.
+This function returns the normal probability density, and can return the log probability density if the argument `log = TRUE`. 
 
 ```{r, message=FALSE, fig.cap="Contour plot for the log-likelihood surface across a 2d grid of parameter space."}
 # set parameters
