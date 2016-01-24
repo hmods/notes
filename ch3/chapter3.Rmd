@@ -51,8 +51,8 @@ The terms can verbally be described as follows:
 
 - $p(\theta \mid y)$: the *posterior* distribution of the parameters. This tells us what the parameters probably are (and are not), conditioned on having observed some data $y$.
 - $p(y \mid \theta)$: the likelihood of the data $y$ conditioned on the parameters
-- $p(\theta)$: the *prior* distributions of the parameters. This should represent our prior knowledge about the values of the parameters, including values we think are likely and values we think are highly unlikely. Prior knowledge comes from similar studies and/or first principles.
-- $p(y)$: The marginal distribution of the data (i.e. not conditioned on any particular value of $\theta$). This quantity can be difficult or even impossible to compute, will always be a constant after the data have been observed, and is often ignored.
+- $p(\theta)$: the *prior* distribution of the parameters. This should represent our prior knowledge about the values of the parameters, assigning high probability values we think are likely and low probability to values we think are highly unlikely. 
+- $p(y)$: The marginal distribution of the data (obtained by marginalizing $\theta$ out of the joint distribution $p(y, \theta)$). This quantity can be difficult or even impossible to compute, will always be a constant after the data have been observed, and is often ignored.
 
 Because $p(y)$ is a constant, it is valid and common to consider the posterior distribution up to this proportionality constant:
 
@@ -136,7 +136,10 @@ for (i in 1:nrow(g)){
 }
 ```
 
-One commonly used prior is the beta(1, 1), because it corresponds to a uniform prior for $p$ (shown in the top left corner). That is, all values between zero and one are given equal weighting. Note that other beta priors put more weight on intermediate values of $p$ (e.g. beta(5,5)), while others weight extremely low or extremely high values of $p$. Note that it is even possible to construct a beta prior that has high probability of extreme values near zero and one, and low probability elsewhere!
+One commonly used prior is the beta(1, 1), because it corresponds to a uniform prior for $p$ (shown in the top left corner). 
+That is, all values between zero and one are given equal probability density. 
+Note that beta priors can have higher density for intermediate values of $p$ (e.g. beta(5,5)), and extremely low or extremely high values of $p$. 
+It is also possible to construct a beta prior that has high probability of extreme values near zero and one, and low probability elsewhere.
 
 With a likelihood and prior in hand, we now have all of the ingredients to embark on our first Bayesian analysis for a Bernoulli random variable.
 We'll proceed by finding the posterior distribution up to some proportionality constant, then we'll use our knowledge of the beta distribution to recover the correct proportionality constant:
@@ -191,16 +194,15 @@ for (i in 1:nrow(g)){
 }
 ```
 
-A few things to note:
+Notice that the uniform prior beta(1,1) results in a posterior that is close to the likelihood, while strong priors pull the posterior distribution toward them, potentially away from the likelihood.
 
-- The uniform prior beta(1,1) results in a posterior that is identical to the likelihood, meaning that the posterior mode is equal to the maximum likelihood estimate.
-- strong priors (i.e. those with a lot of weight on a certain portion of distribution such as beta(10,1)) pull the posterior distribution toward them and away from the likelihood distribution
-- weaker, intermediate priors (i.e. beta(5,5)) result in posteriors that are more of a compromise between the prior and the likelihood.
+Some statisticians (typically non-Bayesian) will argue that only the uniform prior is appropriate because it assumes complete ignorance about possible values of the parameter (i.e. is unbiased) and allows the data to "speak" for themselves. 
+Note, however, that having a uniform prior is not the same as having *no* prior.
 
-Some statisticians (typically non-Bayesian) will argue that only the uniform prior is appropriate because it assumes complete ignorance about possible values of the parameter (i.e. is unbiased) and allows the data to "speak" for themselves. Note, however, that having a uniform prior is not quite the same as having *no* prior, because even an explicit (or implicit in the case of maximum likelihood estimation) uniform prior represents a our prior belief (whether we want it to or not!)
-
-Consequently, most Bayesian statisticians nowadays advocate for the inclusion of prior distributions that provide a better representation of "reasonable" values of our parameter  rather than prior distributions that feign ignorance. For example, if we were trying to estimate the probability that coin flip came up heads (even when we expect that the coin to be biased), we may reasonably use a prior that doesn't put much weight on probabalities near zero or one. We can do this because we know that even a biased coin will have to land on tails sometimes and head sometimes. We'll encounter similar examples or reasonable priors for parameters that are more commonly estimated in biological modeles in later chapters.
-
+Consequently, most Bayesian statisticians nowadays advocate for the inclusion of prior distributions that provide a better representation of "reasonable" values of our parameter rather than prior distributions that feign ignorance. 
+For example, if we were trying to estimate the probability that coin flip came up heads (even when we expect that the coin to be biased), we may reasonably use a prior that doesn't put much weight on probabalities near zero or one. 
+We can do this because we know that even a biased coin will have to land on tails sometimes and head sometimes. 
+We'll encounter similar examples or reasonable priors for parameters that are more commonly estimated in biological modeles in later chapters.
 
 Another nice feature of Bayesian approaches is that, given enough data, the prior tends to have less of an influence on the posterior.
 This is consistent with the notion that when reasonable people are presented with strong evidence, they tend to more or less agree even if they may have disagreed ahead of time (though at times the empirical evidence for this phenomenon may seem somewhat equivocal).
@@ -236,7 +238,7 @@ In reality, most of the time we don't analytically derive posterior distribution
 Mostly, we can express our models in specialized programming languages that are designed to make Bayesian inference easier.
 Here is a Stan model statement from the above example.
 Stan model statements are best managed as text files with a `.stan` extension.
-For instance, we could call this `bern.stan`.
+For instance, we could call this `bern.stan`. 
 
 ```
 data {
@@ -265,7 +267,7 @@ Last, the model block contains our beta prior for $p$ and our Bernoulli likeliho
 
 Stan does not find the analytic expression for the posterior.
 Rather, Stan translates the above program into a Markov chain Monte Carlo (MCMC) algorithm to simulate samples from the posterior distribution.
-In practice, this is sufficient to learn about the model parameters.
+In practice, this can be sufficient to learn about the model parameters.
 
 ### What is MCMC?
 
@@ -284,7 +286,7 @@ Some of these are graphical.
 Traceplots show the parameter values that a Markov chain has taken on the y-axis, and iteration number on the x-axis.
 For instance, if we run our Stan model from before:
 
-```{r, message=FALSE, fig.cap="Traceplots that show the sequence of parameter values taken in the Markov chains."}
+```{r, message=FALSE, results = 'hide'}
 # make up some data
 library(rstan)
 y <- c(1, 1, 0, 0, 0, 0, 0, 0)
@@ -294,10 +296,15 @@ n <- length(y)
 stan_d <- list(y = y, n = n)
 
 out <- stan('bern.stan', data = stan_d)
+```
+
+```{r, fig.cap="Traceplots that show the sequence of parameter values taken in the Markov chains.", fig.height = 4, fig.width=8}
 traceplot(out, pars = c('p', 'lp__'), inc_warmup=TRUE)
 ```
 
-This traceplot is useful for verifying convergence. In this case, we've plotted the "warmup" samples (grey background) and the samples drawn after the "warmup period (white background). In this case, all four of the chains appear to be sampling from the same region (somwehere between $p = 0.2$ and $0.4$).
+This traceplot is useful for verifying convergence. 
+In this case, we've plotted the "warmup" samples (grey background) and the samples drawn after the "warmup period (white background). 
+All four of the chains appear to be sampling from the same region (somwehere between $p = 0.2$ and $0.4$).
 We can also inspect some numerical summaries that are used to detect non-convergence.
 Specifically, we can look at the $\hat{R}$ statistic, which is a measure of how similar the chains are to one another.
 If $\hat{R} > 1.1$, then we ought to be worried about convergence of our chains.
@@ -325,9 +332,9 @@ $$\beta \sim N(0, 5)$$
 
 $$\sigma \sim halfNormal(0, 5)$$
 
-where the half-Normal with mean zero is a folded Gaussian probability density function with only positive mass:
+where the half-Normal with mean zero is a folded Gaussian probability density function with only positive probability density (recall that standard deviations and variances cannot be negative):
 
-```{r, echo=FALSE, fig.cap="Half-normal prior distribution with mean 0 and standard deviation 5."}
+```{r, echo=FALSE, fig.cap="Half-normal prior distribution with mean 0 and standard deviation 5.", fig.width=5, fig.height=3}
 par(mfrow=c(1, 1))
 x <- seq(0, 20, .01)
 plot(x, 2 * dnorm(x, 0, 5), type='l',
@@ -336,7 +343,7 @@ plot(x, 2 * dnorm(x, 0, 5), type='l',
 
 Let's do a quick linear regression model and summarize/plot the results.
 
-```{r, fig.cap="Plot of simulated linear regression data."}
+```{r, fig.cap="Plot of simulated linear regression data.", fig.width=5, fig.height=3}
 n <- 20
 x <- runif(n, 0, 3)
 y <- rnorm(n, -3 + .75 * x, 1)
@@ -361,7 +368,7 @@ parameters {
 
 model {
   beta ~ normal(0, 5);
-  sigma ~ normal(0, 5);
+  sigma ~ normal(0, 5); // actually half-normal: 0 is lower bound
   y ~ normal(X * beta, sigma);
 }
 ```
@@ -378,11 +385,11 @@ out <- stan('lm.stan', data = stan_d)
 
 There are also some other default plots which are nice:
 
-```{r, fig.cap="Traceplot of Markov chains."}
+```{r, fig.cap="Traceplot of Markov chains.", fig.height = 4, fig.width=8}
 traceplot(out)
 ```
 
-```{r, fig.cap="Default plot output for `stanfit` objects."}
+```{r, fig.cap="Default plot output for `stanfit` objects.", fig.height = 3, fig.width=5, message = FALSE}
 plot(out)
 ```
 
@@ -419,29 +426,32 @@ points(x, y, pch=19)
 ```
 
 We might be particularly interested in the effect of x on y.
-In the frequentist world, our inference is often centered around a null hypothesis that x has no effect on y. However, we have left the world of frequentism, so what kinds of inference can we make about the relationship between x and y given our posterior.
+In the frequentist world, our inference is often centered around a null hypothesis that x has no effect on y. 
+However, we have left the world of frequentism, so what kinds of inference can we make about the relationship between x and y given our posterior.
 For starters, it doesn't make sense to ask what the probability is that the slope is exactly equal to zero (i.e. the probabality of a frequentist null hypothesis).
-If we think of a posterior probability density of our slope, then the true probability of any one particular value is zero because this is a probability density function, not a probability mass function (this is true for $\beta=0$ and for $\beta = .0112351351$, for instance).
+If we think of a posterior probability density of our slope, then the probability of any one particular value is zero because this is a probability density function, not a probability mass function (this is true for $\beta=0$ and for $\beta = .0112351351$, for instance). 
+However, the posterior probability density does give us relative measures of the probabilities of different parameter values conditional on the data.
 
 ```{r, fig.cap="Density plot of the posterior distribution of the slope."}
 plot(density(post$beta[, 2]),
      main=expression(paste('Posterior density of ', beta)))
 ```
 
-A better question (answerable with a probability density function) might be: given the data (and, implicitly, our prior information and the model we used), what is the probability that $x$ has a positive effect on $y$?
+A better question (answerable with a probability density function) might be: given the data (and, implicitly, the model we used), what is the probability that $x$ has a positive effect on $y$?
 This is equivalent to asking about the area to the right of zero in the posterior distribution of $\beta$, and the number is approximated simply the proportion of posterior draws greater than zero.
 
 ```{r, fig.cap="Sorted posterior draws for the estimated slope. These plots are useful for visually inspecting distributions."}
-sum(post$beta[, 2] > 0)/4000  # we have 4000 draws from the posterior
+mean(post$beta[, 2] > 0)
 ord <- order(post$beta[, 2])
 plot(post$beta[ord, 2],
      col=ifelse(post$beta[ord, 2] > 0, 'red', 'black'),
      ylab='Sorted posterior draws for the slope')
 ```
+
 Alternatively, we might believe that small positive values of the slope are not biologically relevant, and we might instead ask about the probability that the slope is above a biologically meaningful cutoff depending on the units of x and y(say $\beta > 0.5$).
 
 ```{r}
-sum(post$beta[, 2] > 0.5)/4000  
+mean(post$beta[, 2] > 0.5)  
 ```
 
 We might also construct a 95% credible interval for our estimate to communicate uncertainty in our estimate of $\beta$.
@@ -450,7 +460,7 @@ We might also construct a 95% credible interval for our estimate to communicate 
 quantile(post$beta[, 2], probs=c(0.025, 0.975))
 ```
 
-Conditional on the data (and, again, the prior and the model), there is a 95% probability that the true parameter value is in the credible interval.
+Conditional on the data, there is a 95% probability that the true parameter value is in the credible interval.
 This is different from the interpretation of frequentist confidence intervals, which relies on long-run frequencies for imaginary realizations of the data collection and interval estimation procedure.
 In other words, our confidence in frequentist confidence intervals is in the procedure of creating confidence intervals - in the hypothetical long run, 95% of the intervals that we construct will contain the true value.
 As pointed out [here](http://jakevdp.github.io/blog/2014/06/12/frequentism-and-bayesianism-3-confidence-credibility/), this is the right answer to the wrong question.
@@ -481,22 +491,16 @@ HDI <- function(values, percent=0.95){
   return(HDIlim)
 }
 
-rbind(quantile(post$beta[, 2], probs=c(0.025, 0.975)),HDI(post$beta[, 2]))
+# compare the two intervals
+rbind(quantile(post$beta[, 2], probs=c(0.025, 0.975)), 
+      HDI(post$beta[, 2]))
 ```
 
 In this instance, our posterior is fairly symmetric and the two types of credible intervals will not be much different.
 However, if we were working with posterior distributions that were highly asymmetric, then the highest density posterior intervals and the quantile based credible intervals will tend to differ.
 The main consideration is that the intervals or other summary statistics reported align with the research question of interest, rather than blindly picking one summary statistic that we assume will work well all of the time.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 Last, we mention that we are not limited to working with the posterior distributions of the parameters defined explicitly in the model.
-=======
-Last, we mention that we are not limited to working with the posterior distributions of the parameters defined in explicitly in the model.
->>>>>>> origin/master
-=======
-Last, we mention that we are not limited to working with the posterior distributions of the parameters defined explicitly in the model.
->>>>>>> origin/master
 We can also calculate the posterior distributions of any derived parameters immediately from the simulated posterior draws.
 For instance, if we were interested in the posterior distribution of the correlation between the intercept and slope, we can evaluate the correlation for each posterior draw to derive the full posterior distribution for this correlation.
 We could do the same if we were interested in the posterior distribution for the ratio between the slope and intercept, the difference between the slope and intercept, and so forth.
