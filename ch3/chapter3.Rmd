@@ -197,9 +197,10 @@ for (i in 1:nrow(g)){
 Notice that the uniform prior beta(1,1) results in a posterior that is close to the likelihood, while strong priors pull the posterior distribution toward them, potentially away from the likelihood.
 
 Some statisticians (typically non-Bayesian) will argue that only the uniform prior is appropriate because it assumes complete ignorance about possible values of the parameter (i.e. is unbiased) and allows the data to "speak" for themselves. 
-Note, however, that having a uniform prior is not the same as having *no* prior.
+Note, however, that having a uniform prior is not the same as having *no* prior, and that uniform priors can actually be quite non-uniform (informative) on a transformed scale. 
+Jefferys priors are truly non-informative and invariant to reparameterization, but we will not focus much on them in this course.
 
-Consequently, most Bayesian statisticians nowadays advocate for the inclusion of prior distributions that provide a better representation of "reasonable" values of our parameter rather than prior distributions that feign ignorance. 
+Most Bayesian statisticians advocate for the inclusion of reasonable prior distributions rather than prior distributions that feign ignorance. 
 For example, if we were trying to estimate the probability that coin flip came up heads (even when we expect that the coin to be biased), we may reasonably use a prior that doesn't put much weight on probabalities near zero or one. 
 We can do this because we know that even a biased coin will have to land on tails sometimes and head sometimes. 
 We'll encounter similar examples or reasonable priors for parameters that are more commonly estimated in biological modeles in later chapters.
