@@ -489,9 +489,13 @@ However, if we were working with posterior distributions that were highly asymme
 The main consideration is that the intervals or other summary statistics reported align with the research question of interest, rather than blindly picking one summary statistic that we assume will work well all of the time.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 Last, we mention that we are not limited to working with the posterior distributions of the parameters defined explicitly in the model.
 =======
 Last, we mention that we are not limited to working with the posterior distributions of the parameters defined in explicitly in the model.
+>>>>>>> origin/master
+=======
+Last, we mention that we are not limited to working with the posterior distributions of the parameters defined explicitly in the model.
 >>>>>>> origin/master
 We can also calculate the posterior distributions of any derived parameters immediately from the simulated posterior draws.
 For instance, if we were interested in the posterior distribution of the correlation between the intercept and slope, we can evaluate the correlation for each posterior draw to derive the full posterior distribution for this correlation.
