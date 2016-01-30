@@ -35,8 +35,9 @@ Where the log-link is used to map the Poisson distribution's only parameter $\la
 Recall that $\lambda$ is the mean and variance of the Poisson distribution, in contrast for example to the Gaussian distribution which has separate parameters for the first and second moments.
 
 Sometimes, it's desirable to include an offset. 
-For instance, perhaps $y$ is the number of events per unit time, or per square-meter, and each observation has different time intervals or areas sampled. 
-Then, we might be interested in modeling the rate of events per unit (time or meters square), e.g., $\dfrac{\lambda}{t}$, which is in units events per time.
+For instance, perhaps $y$ is the number of events in some period of time, or in some area, volume, etc., and each observation has different time intervals, areas, or volumes sampled. 
+A simple example would be counting the number of zooplankton in water samples that vary in their volume.
+Then, we might be interested in the rate of events or event density per unit (time or meters square), e.g., $\dfrac{\lambda}{t}$, which is in units events per time.
 
 $$log(\lambda / t) = X \beta$$
 
@@ -44,13 +45,14 @@ $$log(\lambda) - log(t) = X \beta$$
 
 $$log(\lambda) = X \beta + log(t)$$
 
-So that now, we can still rely on $y \sim Poisson(\lambda)$, even with varying $t$.
+So that now, we can still rely on $y \sim Poisson(\lambda)$, even with varying $t$, where $y$ is the number of events counted.
+Here, we are assuming that the time period sampled is known without error.
 
 The class of models that utilize the Poisson distribution is far broader than what we can do with glms, but glms provide a common and simple starting point. 
 
 ## Simulation and estimation
 
-We will demonstrate with a Poisson regression, but maintain the generality of our notation by continuing to make use of the design matrix $X$, so that the applicability to ANOVA, ANCOVA, etc. types of applications remains apparent. 
+We will demonstrate with a Poisson regression, but maintain the generality of our notation by continuing to make use of the design matrix $X$, so that the applicability to ANOVA, ANCOVA, etc. analogues with Poisson responses remains apparent. 
 
 ```{r}
 n <- 50
@@ -83,14 +85,16 @@ lines(xnew, exp(coef(m)[1] + coef(m)[2] * xnew))
 ### Estimation with Stan
 
 Even though Poisson glms are often taught after Gaussian glms, they are in a way simpler, requiring one less parameter. 
+While the normal distribution has separate parameters for the mean $\mu$ and variance $\sigma^2$, with the Poisson distribution, the parameter $\lambda$ is the mean *and* the variance. 
 Here is a Stan file `poisson_glm.stan` that can be used generally to fit any Poisson glm without an offset. 
 
 ```
+// Stan code: Poisson GLM with no offset
 data {
-  int n; // sample size
-  int p; // number of coefficients
+  int<lower = 1> n; // sample size
+  int<lower = 1> p; // number of coefficients
   matrix[n, p] X;
-  int y[n];
+  int<lower = 0> y[n];
 }
 
 parameters {
@@ -107,7 +111,6 @@ Fitting the model is the same as before:
 
 ```{r, message=FALSE, warnings=FALSE, results='hide'}
 library(rstan)
-X <- matrix(c(rep(1, n), x), ncol = 2)
 stan_d <- list(n = nrow(X), p = ncol(X), X = X, y = y)
 out <- stan('poisson_glm.stan', data = stan_d)
 ```
@@ -130,27 +133,37 @@ pairs(out)
 Let's plot the lines of best fit from the posterior distribution:
 
 ```{r, fig.cap="Raw data along with lines of best fit for the Poisson glm."}
-library(scales)
+# load scales package for alpha() transparency function
+library(scales) 
+
+# extract posterior samples into a list containing arrays
 post <- rstan::extract(out)
+
+# plot raw data
 plot(x, y)
+
+# add a faint line for each posterior draw
 n_iter <- length(post$lp__)
 for (i in 1:n_iter){
   lines(xnew, exp(post$beta[i, 1] + post$beta[i, 2] * xnew), 
         col = alpha('purple3', .01))
 }
+
+# add the points again as solid circles
 points(x, y, pch=19)
 ```
 
 At times, people get confused about why the fits from Poisson glms are not linear, even though we didn't include any polynomial terms. 
 The model is linear on the link-scale only, so that if we were to plot x vs. $log(\lambda)$, we would see a straight line. 
 There is a lot of good material in Gelman and Hill, Chapter 6 to help with the interpretation of glm parameter estimates. 
-For many applications, visualization is an excellent step towards interpreting model output. 
+Visualization is an excellent step towards interpreting model output. 
 
 ## Overdispersion
 
-For various reasons, the variance of counts in nature tends to be greater than the mean. 
+The variance of counts in nature tends to be greater than the mean. 
 This can be considered to be extra-Poisson variance. 
-Various strategies exist to account for overdispersion, and here we cover the inclusion of lognormal random effects and also derive the negative binomial distribution as a Poisson distribution with a gamma-distributed $\lambda$. 
+Various strategies exist to account for overdispersion. 
+Here we cover the inclusion of lognormal random effects, and introduce the negative binomial distribution which arises as a Poisson distribution with a gamma-distributed $\lambda$. 
 
 ### Checking for overdispersion
 
@@ -181,10 +194,10 @@ abline(v = var(y), col=2, lwd=3)
 In this case, we can say that the variance in y shown by the red line is perfectly compatible with the model, which makes sense because we generated the data from a Poisson distribution. 
 
 Here's a real world application with overdispersion.
-The `vegan` package has a dataset of the number of trees in a bunch of 1-hectare plots on Barro Colorado Island. 
-Let's look at the mean and variance of each species to get a sense for how often Poisson distribution might work:
+The `vegan` package has a dataset of the number of trees in a bunch of 1-hectare plots on Barro Colorado Island in Panama. 
+Let's look at the mean and variance for the counts of each species:
 
-```{r, message=FALSE, fig.cap="Sample mean and variances for abundance on Barro Colorado Island, with each point representing a different species."}
+```{r, message=FALSE, fig.cap="Sample mean and variances for abundance on Barro Colorado Island, with each point representing a different species. If the mean equals the variance, as the Poisson distribution assumes, points will fall on the dashed line."}
 library(vegan)
 library(dplyr)
 data(BCI)
@@ -198,6 +211,8 @@ summ_d <- d %>%
   group_by(ind) %>%
   summarize(lmean=log(mean(values)), 
             lvar=log(var(values)))
+
+# plot the log-mean vs. the log-variance
 ggplot(summ_d, aes(x=lmean, y=lvar)) + 
   geom_point() + 
   geom_abline(intercept=0, slope=1, linetype='dashed') + 
@@ -207,7 +222,9 @@ ggplot(summ_d, aes(x=lmean, y=lvar)) +
 
 Darn.
 Looks like the variance exceeds the mean for most of these species. 
+But, we'll need to do a posterior predictive check in order to more formally evaluate whether the variance is consistent with the assumption that the counts are Poisson distributed.
 Let's put together a simple model for the abundance of the species *Trichilia pallida*, where we seek to estimate the mean density for the island based on the sampled plots. 
+This is a fairly simple model - there are no covariates, and the design matrix is just a vector of ones, similar to the "model of the mean" that we encountered in chapter 1, but with a Poisson distributed response. 
 
 ```{r, message=FALSE, warnings=FALSE, results='hide', fig.cap="Sorted abundance values for *Trichilia pallida*, with each point representing the abundance of the species in a sample plot."}
 # subset data
@@ -220,6 +237,8 @@ plot(sort(species_d$values), ylab="Sorted abundance")
 stan_d <- list(n = nrow(species_d), p = 1, 
                X = matrix(1, nrow = nrow(species_d)), 
                y = species_d$values)
+
+# estimate parameters
 out <- stan('poisson_glm.stan', data = stan_d)
 ```
 
@@ -230,12 +249,15 @@ out
 traceplot(out)
 ```
 
-Using a posterior predictive check for the variance of $y$:
+We will use a posterior predictive check for the variance of $y$. 
+Again, the goal here is to simulate new data from the posterior, and see whether the data generated from our model are consistent with the observed data. 
+Specifically, we want to know whether the variance in the data exceeds the variance that our model would predict.
 
-```{r, fig.cap="Posterior predictive check for the variance of plot abundance from the single species Poisson glm."}
+```{r, fig.cap="Posterior predictive check for the variance of plot abundance from the single species Poisson glm. The histogram represents the posterior predictive variance, and the red line represents the variance in the data."}
+# extract posterior draws into a list of arrays
 post <- rstan::extract(out)
 
-# simulate new observations and store variances
+# simulate new observations and store variances for each posterior draw
 y_new <- array(dim=c(n_iter, n))
 var_new <- rep(NA, n_iter)
 for (i in 1:n_iter){
@@ -246,10 +268,12 @@ for (i in 1:n_iter){
 # compare distribution of simulated values to the empirical values
 hist(var_new, breaks=40, xlab='Var(y)', xlim=c(0, 7),
      main='Posterior predictive check \n for overdispersion')
+# add red line for empirical variance
 abline(v = var(stan_d$y), col=2, lwd=3)
 ```
 
 As we can see, the observed variance is more than twice the expected variance under a Poisson model. 
+Thus, we would conclude that we have strong evidence for overdispersion.
 
 ### Lognormal overdispersion
 
@@ -266,20 +290,25 @@ $$\sigma \sim halfCauchy(0, 2)$$
 
 Here, each observation $y_i$ has an associated parameter $\epsilon_i$ that has a normal prior, with a variance hyperparameter that determines how much extra-Poisson variance we have. 
 If there is no overdispersion, then the posterior probability mass for $\sigma$ should be near zero. 
+We can also represent this model with a directed acyclic graph.
+
+![Directed acyclic graph of the overdispersed Poisson model.](ch4/dag.pdf)
+
 Our Stan model `poisson_od.stan` might be:
 
 ```
+// Stan code for the overdispersed Poisson model
 data {
-  int n; // sample size
-  int p; // number of coefficients
+  int<lower = 1> n; // sample size
+  int<lower = 1> p; // number of coefficients
   matrix[n, p] X;
-  int y[n];
+  int<lower = 0> y[n];
 }
 
 parameters {
   vector[p] beta;
   vector[n] epsilon;
-  real<lower=0> sigma;
+  real<lower = 0> sigma;
 }
 
 model {
@@ -348,7 +377,7 @@ for (i in 1:9){
 }
 ```
 
-We could implement this directly in Stan, but it would be easier to use the built-in and optimized negative binomial distribution function, which is parameterized in terms of its mean $\mu$ and precision $\phi$:
+We could implement this directly in Stan, but it is easier to use the built-in and optimized negative binomial distribution function, which is parameterized in terms of its mean $\mu$ and precision $\phi$:
 
 $$y \sim NegBinom(\mu, \phi)$$
 
@@ -358,10 +387,10 @@ $$\phi \sim halfCauchy(0, 2)$$
 
 ```
 data {
-  int n; // sample size
-  int p; // number of coefficients
+  int<lower = 1> n; // sample size
+  int<lower = 1> p; // number of coefficients
   matrix[n, p] X;
-  int y[n];
+  int<lower = 0> y[n];
 }
 
 parameters {
@@ -376,7 +405,7 @@ model {
 }
 ```
 
-With this `nb_glm.stan` file in hand, we can fit the model as before:
+With this `nb_glm.stan` file, we can fit the model as before:
 
 ```{r, message=FALSE, warnings=FALSE, results='hide'}
 nb_out <- stan('nb_glm.stan', data = stan_d)
