@@ -108,7 +108,7 @@ $$[y \mid p] = p^{\sum_i y_i} (1 - p)^{n - \sum_i y_i}$$
 Having obtained the likelihood, we now must specify a prior to complete our specification of the joint distribution of data and parameters $[y \mid p][p]$, the numerator in Bayes' theorem.
 In this case we know that $p$ can only take on values on the interval $(0,1)$, which means that some of the probability distributions we've utilized previously (e.g. normal) won't work because values below zero and above one have non-zero probabilities. Similarly, we wouldn't want to try and use a (non-sensical) discrete probability distribution -- for example, giving equal weighting to $p = 0, 0.4, 0.6,$ and $0.8$ -- which would automatically rule out many possible values between zero and one.
 
-A natural choice among common probability distributions is the Beta distribution, which has two parameters $\alpha$ and $\beta$, with support on the interval $(0, 1)$.
+A natural choice among common probability distributions is the [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution), which has two parameters $\alpha$ and $\beta$, with support on the interval $(0, 1)$.
 This is a good choice because its bounds are similar to those for probabilities.
 Additionally, the posterior distribution induced by the Beta prior distribution is also a Beta distribution.
 When a prior distribution for a parameter induces a posterior distribution that is of the same form (same probability distribution) as the prior, the prior is said to be a "conjugate prior" for the likelihood.
@@ -318,7 +318,8 @@ out
 ```
 
 This output also tells us that we ran four MCMC chains, each for 2000 iterations, and the first 1000 iterations were discarded as warmup (the shaded region in the traceplot).
-For each parameter (and for the log probability up to a proportionality constant `lp__`), we get the posterior mean, the MCMC standard error of the mean, the posterior standard deviation, some quantiles, and an estimate for the number of effective samples from the posterior `n_eff`, which should typically be at least in the hundreds.
+For each parameter, we get the posterior mean, the MCMC standard error of the mean, the posterior standard deviation, some quantiles, and an estimate for the number of effective samples from the posterior `n_eff`, which should typically be at least in the hundreds.
+We also get these same summary statistics for the joint log posterior, here called `lp__`, which is the log of the product of the likelihood and prior $log([y \mid \theta][\theta])$.
 
 ### Example: normal linear models
 
@@ -378,7 +379,6 @@ So we have this file saved somewhere as `lm.stan`, and it can fit any of the lin
 Fitting the model:
 
 ```{r, message=FALSE, warnings=FALSE, results='hide'}
-library(rstan)
 X <- matrix(c(rep(1, n), x), ncol = 2)
 stan_d <- list(n = nrow(X), p = ncol(X), X = X, y = y)
 out <- stan('lm.stan', data = stan_d)
