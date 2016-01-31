@@ -387,7 +387,10 @@ $$log(\mu) = X \beta$$
 
 $$\phi \sim halfCauchy(0, 2)$$
 
-In the lognormal model overdispersion was accounted for in the linear predictor via the inclusion of the $\epsilon$ term (and its hyperparameter variance $\sigma$). In this negative-binomial formulation the amount of overdispersion is accounted for by the $\phi$ parameter. Because $\phi$ can take values both above and below one, the negative binomial distribution is capable of accounting for both over- and (more rarely encoutnered) underdispersion (when the variance is actually less than expected given the mean). Thus the negative-binomial is a bit more flexible than the lognormal when it comes to correctly modeling over-and and underdispersed data (though the lognormal has its own advantages).
+In the lognormal model overdispersion was accounted for in the linear predictor via the inclusion of the $\epsilon$ term (and its hyperparameter variance $\sigma$). 
+In this parameterization of the negative-binomial distribution, the amount of overdispersion is accounted for by the $\phi$ parameter. 
+The mean is $\mu$, and the variance is $\mu + \mu^2 / \phi$.
+Thus, when $\phi$ is small, the variance is much greater than the mean, and as $\phi$ approaches infinity, the negative binomial distribution converges to a poisson distribution where the variance equals the mean. 
 
 A negative-binomial Stan model would look like:
 
