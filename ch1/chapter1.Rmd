@@ -1,6 +1,3 @@
----
-output: pdf_document
----
 Chapter 1: Linear models
 ========================
 
