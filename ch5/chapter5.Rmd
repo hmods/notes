@@ -3,8 +3,8 @@ Chapter 5: Binomial models
 
 ## Big picture
 
-The binomial distribution is used all over the place in ecology, so it's important to familiarize yourself with the properties/behavior of the bionomial distribution. 
-In this section we will cover the binomial in the context of glms, but we will also point out some useful hierarchical models that include the binomial distribution, including occupancy models, N-mixture models, and binomial-Poisson hierarchical models. 
+The binomial distribution is used all over the place in ecology, so it's important to familiarize yourself with the properties/behavior of the bionomial distribution.
+In this section we will cover the binomial in the context of glms, but we will also point out some useful hierarchical models that include the binomial distribution, including occupancy models, N-mixture models, and binomial-Poisson hierarchical models.
 
 #### Learning goals
 
@@ -20,33 +20,37 @@ In this section we will cover the binomial in the context of glms, but we will a
 
 ## Binomial generalized linear models
 
-The binomial distribution is used for integer valued random variables that represent the number of successes in $k$ independent trials, each with probability $p$. 
-For instance, the number of chicks surviving would be a binomial random variable, with the number of eggs laid $k$ and a survival probability $p$. 
-Usually, $k$ is known and $p$ is estimated, but there are some useful hierarchical models that treat $k$ as a parameter that we will cover later (e.g., N-mixture models, and binomial-Poisson hierarchy models). 
+The binomial distribution is used for integer valued random variables that represent the number of successes in $k$ independent trials, each with probability $p$.
+For instance, the number of chicks surviving would be a binomial random variable, with the number of eggs laid $k$ and a survival probability $p$.
+Usually, $k$ is known and $p$ is estimated, but there are some useful hierarchical models that treat $k$ as a parameter that we will cover later (e.g., N-mixture models, and binomial-Poisson hierarchy models).
 When $k=1$, the binomial distribution is also called the Bernoulli distribution.
-In binomial glms, a link function is needed to map $p$ from the constrained probability space to an unconstrained space. 
-Usually either the logit or probit link functions are used, and both are inverse cumulative distribution functions for other distributions (the logistic and the Gaussian, respectively). 
+In binomial glms, a link function is needed to map $p$ from the constrained probability space to an unconstrained space.
+Usually either the logit or probit link functions are used, and both are inverse cumulative distribution functions for other distributions (the logistic and the Gaussian, respectively).
 We can write a binomial glm as follows:
 
 $$y \sim Binomial(p, k)$$
 
 $$logit(p) = X \beta$$
 
-Where $logit(p) = log(p / (1-p))$, and $\beta$ is a parameter vector to be estimated. 
+Where $logit(p) = log(p / (1-p))$, and $\beta$ is a parameter vector to be estimated.
 
 ## Simulation and estimation
 
 Imagine that we're interested in whether different egg companies are more or less likely to have broken eggs in our neighborhood grocery store, and we peek into 20 cartons from each of 4 companies, each with 12 eggs per carton.
 We know $k=12$ for each carton, and we want to know $p_1, ..., p_4$, the probability of broken eggs for the 4 companies.
-This is analogous to ANOVA, but with a binomial response. 
+This is analogous to ANOVA, but with a binomial response.
 
 ```{r, fig.cap="Boxplots for the number of eggs broken in dozen egg cartons across different companies."}
-m <- 4
-n_each <- 20
-company <- rep(LETTERS[1:m], each = n_each)
-p <- rep(c(.02, .01, .05, .1), each = n_each)
-n <- length(p)
-k <- rep(12, n)
+# set up
+m <- 4 # number of companies
+n_each <- 20 # number of cartons per company
+company <- rep(LETTERS[1:m], each = n_each) # designate letters for company
+probs <- c(.02, .01, .05, .1)
+p <- rep(probs, each = n_each) # probabilities for each carton
+n <- length(p) # total number of cartons
+k <- rep(12, n) # number of eggs in each carton
+
+# simulate broken eggs
 broken <- rbinom(n, size = k, prob = p)
 not_broken <- 12 - broken
 boxplot(broken ~ company)
@@ -54,19 +58,21 @@ boxplot(broken ~ company)
 
 ### Estimation with glm
 
-We can estimate the probabilities for each company as follows: 
+We can estimate the maximum likelihood probabilities for each company as follows:
 
 ```{r}
 m <- glm(cbind(broken, not_broken) ~ 0 + company, family = binomial)
 summary(m)
 ```
 
-By default the coefficients are returned on the logit scale. 
+By default the coefficients are returned on the logit scale.
 We can back-transform with the cumulative distribution function for the logistic distribution, `plogis()`:
 
 ```{r}
-plogis(coef(m))
-plogis(confint(m))
+library(tidyr)
+ml_est <- plogis(coef(m)) %>% round(digits = 2)
+ml_ci <- plogis(confint(m)) %>% round(digits = 2)
+cbind(probs,ml_est,ml_ci)
 ```
 
 ### Estimation with Stan
@@ -79,11 +85,11 @@ $$logit(p) = X \beta$$
 
 $$\beta \sim Normal(0, 2)$$
 
-Where the normal(0, 2) prior for beta is fairly uninformative on the logit-scale. 
-Note that in this example, this basically communicates the idea that we have never bought eggs in a carton before. 
+Where the normal(0, 2) prior for beta is fairly uninformative on the logit-scale.
+Note that in this example, this basically communicates the idea that we have never bought eggs in a carton before.
 Realistically, we would select priors that are concentrated toward small probabilities!
 
-Our Stan model for a binomial glm (`binomial_glm.stan`) might look like this: 
+Our Stan model for a binomial glm (`binomial_glm.stan`) might look like this:
 
 ```
 data {
@@ -109,10 +115,10 @@ We can recycle the design matrix made with glm:
 ```{r, message=FALSE, warnings=FALSE, results='hide'}
 library(rstan)
 X <- model.matrix(m)
-stan_d <- list(n = nrow(X), 
-               p = ncol(X), 
-               X = X, 
-               y = broken, 
+stan_d <- list(n = nrow(X),
+               p = ncol(X),
+               X = X,
+               y = broken,
                k = k)
 out <- stan('binomial_glm.stan', data = stan_d)
 ```
@@ -127,8 +133,8 @@ traceplot(out)
 plot(out)
 ```
 
-How might we graph the results? 
-Ideally our plot should show the data and our model output (in this case, the expected number of broken eggs). 
+How might we graph the results?
+Ideally our plot should show the data and our model output (in this case, the expected number of broken eggs).
 In this case, we might try something like this:
 
 ```{r, message=FALSE, fig.cap="Raw data along with posterior HDIs for the probability of an egg being broken across the different companies."}
@@ -144,39 +150,45 @@ library(grid)
 # extract posterior samples and get summaries
 post <- out %>%
   rstan::extract() %>%
-  melt() %>%
+  melt() %>%  # converts to long format
   subset(L1 != 'lp__') %>%
   group_by(Var2) %>%
-  summarize(median = 12 * plogis(median(value)), 
-            lo = 12 * plogis(quantile(value, .025)), 
+  summarize(median = 12 * plogis(median(value)),
+            lo = 12 * plogis(quantile(value, .025)),
             hi = 12 * plogis(quantile(value, .975)))
 post$company <- unique(company)
+  # note multiplying by 12 gives us the expected number of broken eggs
 
 # plot results
-ggplot(d, aes(x=company, y=broken)) + 
-  geom_segment(aes(xend=company, y=lo, yend=hi), data=post, 
-               size=3, col='blue', alpha=.3) + 
-  geom_point(aes(x=company, y=median), data=post, 
-             col='blue', size=3) + 
-  geom_jitter(position=position_jitter(width=.1, height=.1), 
-              shape=1) + 
+ggplot(d, aes(x=company, y=broken)) +
+  geom_segment(aes(xend=company, y=lo, yend=hi), data=post,
+               size=3, col='blue', alpha=.3) +
+  geom_point(aes(x=company, y=median), data=post,
+             col='blue', size=3) +
+  geom_jitter(position=position_jitter(width=.1, height=.1),
+              shape=1) +
   ylab("Number of broken eggs")
 ```
 
 ## Overdispersion
 
-The binomial distribution has mean $np$ and variance $np(1-p)$, but sometimes there is more variation than we would expect from the binomial distribution. 
-For instance, in the previous example, we should expect sources of variation other than the companies that produce and distribute the eggs. 
-Any particular carton may have a different history than other cartons due to chance - maybe the stocker set one carton down hard, or an unattended child opened a carton and broke an egg then closed the carton, etc. 
-Though binomial overdispersion receives little attention in ecology compared to Poisson overdispersion, it is a common problem in real-world data. 
-We should note, however, that if $k=1$ (the Bernoulli case), binomial overdispersion is not identifiable. 
-If Bernoulli random variables can be converted to binomial random variables with $k > 1$, overdispersion may be identifiable.
-As with the Poisson example, you can use posterior predictive checks to evaluate whether your model is underrepresenting the variance in binomial observations. 
+The binomial distribution has mean $np$ and variance $np(1-p)$, but sometimes there is more variation than we would expect from the binomial distribution.
+For instance, in the previous example, we should expect there to be variation in the number of broken eggs in a carton coming from other sources than just the companies that produce and distribute the eggs.
+Any particular carton may have a different history than other cartons due to chance - maybe the stocker set one carton down hard, or an unattended child opened a carton and broke an egg then closed the carton, etc.
+
+Though binomial overdispersion receives little attention in ecology compared to Poisson overdispersion, it is a common problem in real-world data.
+We should note, however, that if $k=1$ (the Bernoulli case), binomial overdispersion is not identifiable.
+Imagine that instead of trying to estimate p for each company we wanted to estimate whether single eggs had different probabilities of being broken.
+With only a single data point per egg, our best guess for p comes from grouping all of the eggs into a single carton and estimating a common p for that carton.
+If the overall probability of eggs being broken in a given carton was 0.5, we cannot distinguish whether every egg had a probability of 0.5, or whether half the eggs had probabilities of 1 and half had zero.
+If Bernoulli random variables can be converted to binomial random variables with $k > 1$ (e.g. thinking about cartons instead of indivdual eggs), overdispersion at that higher level may be identifiable.
+As with the Poisson example, you can use posterior predictive checks to evaluate whether your model is underrepresenting the variance in binomial observations.
 
 ### Binomial-normal model
 
-One common solution to overdispersion is the addition of a normally distributed random effect to the linear predictor. 
-This represents variation at the level of individual observations. 
+One common solution to overdispersion is the addition of a normally distributed random effect to the linear predictor.
+This represents variation at the level of individual observations, which in the case of our example is extra variation at the carton level.
+
 
 $$y_i \sim Binomial(p_i, k_i)$$
 
@@ -188,7 +200,7 @@ $$\epsilon_i \sim Normal(0, \sigma)$$
 
 $$\sigma \sim halfCauchy(0, 2)$$
 
-This is very similar to the lognormal overdispersion strategy for Poisson models covered in the previous chapter. 
+This is very similar to the lognormal overdispersion strategy for Poisson models covered in the previous chapter.
 
 ### Beta-binomial model
 
