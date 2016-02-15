@@ -109,7 +109,7 @@ We should be skeptical of the maximum likelihood estimates for these players, be
 One solution is to select some minimum number of shots made, and only believe estimates for players who have made at least that many shots. 
 This is what the NBA does, and the cutoff is 125 shots. 
 
-```{r, fig.cap="Plot of the truncated collection of NBA players, restricting consideration to those with 125 or more shots as the NBA does. The empirical shooting percentages of these players are considered valid for naming the best shooter(s) in the league."}
+```{r, fig.cap="Plot of the truncated collection of NBA players, restricting consideration to those with 125 or more free throws made as the NBA does. The empirical shooting percentages of these players are considered valid for naming the best shooter(s) in the league."}
 d %>%
   filter(ft_made >= 125) %>%
   ggplot(aes(x=ft_shot, y=ft_pct)) + 
@@ -127,7 +127,7 @@ So, instead of only using information from player $i$ to inform our estimate for
 If we have no information on a player, we'll assume that they're no different than the rest of the players in the league, and we will exclusively use information from other players to make our estimate. 
 As we obtain more information on a specific player, we can place more weight on that information. 
 
-This is the intuition behind partial pooling, and this is a rather Bayesian notion. 
+This is the intuition behind partial pooling, and this is a very Bayesian idea. 
 The secret to implementation lies in placing a prior distribution on $p_i$, the probability that player $i$ makes a free throw, so that:
 
 $$y_i \sim Binom(p_i, k_i)$$
@@ -140,11 +140,16 @@ such that the likelihood to maximize is:
 
 $$\prod_{i=1}^{n} [y_i \mid p_i] [p_i \mid \mu_p, \sigma_p]$$
 
-where $\mu_p$ represents the overall league (among player) mean on a logit scale for the probability of making a free thrower, and $\sigma_p$ represents the variability among players in the logit probability of making a free throw. 
-This type of model is sometimes called a varying-intercept or random-intercept model. 
+where $\prod_{i=1}^{n} [y_i \mid p_i]$ is the binomial likelihood, $[p_i \mid \mu_p, \sigma_p]$ is the prior distribution on the probabilities, $\mu_p$ is the overall league (among player) average (on the logit scale) for the probability of making a free throw, and $\sigma_p$ represents the variability among players in the probability of making a free throw. 
+This type of model is sometimes called a varying-intercept or random-intercept model, though we do not recommend using the term "random intercept" ([more discussion of this point here](http://andrewgelman.com/2005/01/25/why_i_dont_use/)). 
 Because $\mu_p$ and $\sigma_p$ determine the distribution of the parameter $p$, they are known as **hyperparameters**. 
 This model approaches the previous model with no hyperparameters when $\sigma_p$ approaches $\infty$.
 A similar strategy would be to place a beta prior directly on $p_i$ rather than placing a normal prior on $logit(p_i)$.
+Conceptually, this model assumes that there is a population of parameter values that has some distribution (in this case, a normal distribution), and the parameter for any particular player is drawn from this distribution. 
+
+Notice that this is not a valid Bayesian model because there are not prior distributions for all the parameters. 
+Specifically, there is not a prior for the hyperparameters $\mu_p$ and $\sigma_p$. 
+Instead, these parameters are treated as fixed but unknown, and maximum likelihood approaches attempt to find the values of the hyperparameters that maximize the likelihood of the data. 
 
 This model is hierarchical in the sense that we have a within player-level model (each player gets their own $p_i$) and an among-player model (with $\sigma_p$ controlling the among-player variation).
 In this chapter, we will implement this model in a maximum likelihood framework, and later we will explore similar models from a Bayesian perspective.
