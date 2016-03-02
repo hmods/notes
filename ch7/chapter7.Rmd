@@ -360,7 +360,7 @@ Cov[X_1, X_1] & Cov[X_1, X_2] \\
 Cov[X_2, X_1] & Cov[X_2, X_2]
 \end{bmatrix}$
 
-The element of $Sigma$ in the $i^{th}$ row and $j^{th}$ column describes the covariance between the $i^{th}$ and $j^{th}$ dimension. 
+The element of $\Sigma$ in the $i^{th}$ row and $j^{th}$ column describes the covariance between the $i^{th}$ and $j^{th}$ dimension. 
 By definition, the covariance between one random variable and itself (e.g., $Cov[X_1, X_1]$ and $Cov[X_2, X_2]$) is the variance of the random variable, $\sigma^2_{X_1}$ and $\sigma^2_{X_2}$.
 
 For concreteness, suppose that we're considering the following multivariate normal distribution: 
@@ -400,7 +400,7 @@ text(x=0, y=0, expression(mu), cex=2)
 ### Non-centered parameterization: multivariate normal
 
 As with univariate normal random effects, a noncentered parameterization can greatly improve MCMC convergence and efficiency. 
-To acheive this, we first define the Cholesky factor of a matrix $L$, which is lower triangular, and which equals sigma when multiplied by it's own transpose: $\Sigma = L L^{T}$. 
+To acheive this, we first define the Cholesky factor of a matrix $L$, which is lower triangular, and which equals $\Sigma$ when multiplied by it's own transpose: $\Sigma = L L^{T}$. 
 Given $L$, which is a lower triangular $d$ by $d$ matrix, $\mu$, which is the mean vector with length $d$, and $z$, which is a vector of $d$ standard normal N(0, 1) deviates, we can generate a draw from $d$ dimensional multivariate normal distribution $MvN(\mu, \Sigma)$ as follows: 
 
 $$y = \mu + L z$$
@@ -614,12 +614,15 @@ Or, we could translate the model to Stan:
 data {
   int n;
   vector[n] y;
-  int n_subject;
-  int n_t;
+
+  // covariate
+  int tmax;
+  vector<lower=0, upper=tmax>[n] t;
   
   // indices
+  int n_subject;
   int<lower=1, upper=n_subject> subject[n];
-  int<lower=1, upper=n_t> t[n];
+
 }
 
 parameters {
@@ -630,8 +633,29 @@ parameters {
   real<lower=0> sigma_y;
 }
 
+transformed parameters {
+  matrix[n_subject, 2] alpha;
+  vector[n] mu_y;
+  
+  alpha <- rep_matrix(mu', n_subject) 
+              + (diag_pre_multiply(sigma, L) * z)';
+  
+  for (i in 1:n) mu_y[i] <- alpha[subject[i], 1] + alpha[subject[i], 2] * t[i];
+}
+
 model {
   to_vector(z) ~ normal(0, 1);
+  sigma ~ cauchy(0, 5);
+  sigma_y ~ cauchy(0, 5);
+  L ~ lkj_corr_cholesky(2);
+  mu ~ normal(200, 50);
+  
+  y ~ normal(mu_y, sigma_y);
+}
+
+generated quantities {
+  matrix[2, 2] Rho;
+  Rho <- multiply_lower_tri_self_transpose(L);
 }
 ```
 
